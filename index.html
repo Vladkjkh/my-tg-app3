@@ -1,656 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>КИТ</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        html,body{height:100%;font-family:Arial,sans-serif;background:#000;overflow:hidden}
-        body{background-image:url('https://avatars.mds.yandex.net/get-entity_search/2356618/969838143/orig');background-size:cover;background-position:center;display:flex;align-items:flex-start;justify-content:center;position:relative}
-        body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:0}
-        .app{position:relative;z-index:1;width:100%;max-width:100%;height:100vh;display:flex;flex-direction:column}
-        .top-btn{display:block;width:calc(100% - 32px);margin:20px 16px 0;padding:20px 0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:16px;color:#fff;font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);text-align:center;flex-shrink:0}
-        .top-btn:active{transform:scale(.98);background:rgba(255,255,255,0.2)}
-        .content{flex:1;overflow:hidden;padding:10px 16px 0}
-        #mainPage{display:flex;flex-direction:column;height:100%}
-        .coins-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding-bottom:10px}
-        .coin-item{display:flex;align-items:center;padding:10px 16px;background:rgba(255,255,255,0.05);backdrop-filter:blur(4px);border-radius:12px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;gap:10px}
-        .coin-item:active{transform:scale(.98);background:rgba(255,255,255,0.1)}
-        .coin-number{color:rgba(255,255,255,0.25);font-size:12px;font-weight:700;width:20px;flex-shrink:0}
-        .coin-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
-        .coin-icon.btc{background:#f7931a}.coin-icon.eth{background:#627eea}.coin-icon.bnb{background:#f0b90b}.coin-icon.xrp{background:#00aae4}.coin-icon.sol{background:#9945ff}.coin-icon.trx{background:#ef0027}.coin-icon.hype{background:#8b5cf6}
-        .coin-info{flex:1;min-width:0}
-        .coin-name{color:#fff;font-size:15px;font-weight:600}
-        .coin-symbol{color:rgba(255,255,255,0.35);font-size:10px;text-transform:uppercase}
-        .coin-price{color:#fff;font-size:15px;font-weight:600;white-space:nowrap;min-width:70px;text-align:right}
-        .coin-change-24h{font-size:13px;font-weight:600;min-width:55px;text-align:right}
-        .coin-change-24h.green{color:#4caf50}.coin-change-24h.red{color:#f44336}
-        .loading{color:rgba(255,255,255,0.5);text-align:center;padding:30px 0;font-size:14px}
-        #indicatorsPage{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e27;z-index:999;padding:20px;flex-direction:column;align-items:center;overflow-y:auto}
-        #indicatorsPage .back-btn{position:absolute;top:16px;left:16px;z-index:10;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:20px;padding:6px 14px;border-radius:20px;cursor:pointer}
-        #indicatorsPage .back-btn:active{transform:scale(.95);opacity:.7}
-        .indicator-box{width:100%;max-width:600px;margin:80px 0 0 0;padding:20px 15px 15px;background:linear-gradient(135deg,#1a1a3e,#0a0e27);border-radius:16px;border:2px solid rgba(255,193,7,0.3);box-shadow:0 8px 32px rgba(255,193,7,0.15);margin-bottom:20px}
-        .indicator-title{color:#ffc107;font-size:16px;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;text-align:center}
-        .indicator-subtitle{color:rgba(255,255,255,0.5);font-size:11px;text-align:center;margin-bottom:10px}
-        .indicator-chart-container{width:100%;height:150px;position:relative}
-        .indicator-chart-container canvas{width:100%!important;height:100%!important}
-        .indicator-stats{display:flex;justify-content:space-between;padding:8px 5px 0;border-top:1px solid rgba(255,255,255,0.05);margin-top:8px}
-        .indicator-stat{text-align:center;flex:1}
-        .indicator-stat-label{color:rgba(255,255,255,0.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px}
-        .indicator-stat-value{font-size:14px;font-weight:700;margin-top:2px}
-        .indicator-stat-value.positive{color:#4caf50}.indicator-stat-value.negative{color:#f44336}
-        #chartPage{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e27;z-index:999;flex-direction:column;padding:12px}
-        #chartPage .back-btn{position:absolute;top:16px;left:16px;z-index:10;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:20px;padding:6px 14px;border-radius:20px;cursor:pointer}
-        #chartPage .back-btn:active{transform:scale(.95);opacity:.7}
-        #chartPage .chart-header{color:#fff;font-size:20px;font-weight:700;text-align:center;margin-top:50px;margin-bottom:4px}
-        #chartPage .chart-price-display{color:#fff;font-size:28px;font-weight:700;text-align:center}
-        #chartPage .chart-price-display.touch{color:#ffc107}
-        #chartPage .chart-change-display{text-align:center;font-size:16px;font-weight:600;margin-bottom:8px}
-        #chartPage .chart-change-display.green{color:#4caf50}#chartPage .chart-change-display.red{color:#f44336}
-        #chartPage .chart-container-main{flex:1;width:100%;min-height:0;position:relative;touch-action:none}
-        #chartPage .chart-container-main canvas{width:100%!important;height:100%!important;touch-action:none}
-        #chartPage .timeframes{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 0 12px;flex-shrink:0}
-        #chartPage .timeframe-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.6);font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer}
-        #chartPage .timeframe-btn.active{background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)}
-        #chartPage .timeframe-btn:active{transform:scale(.95)}
-        .crosshair-line-h{pointer-events:none;position:absolute;border-top:1px dashed rgba(255,255,255,0.4);z-index:5}
-        .crosshair-line-v{pointer-events:none;position:absolute;border-left:1px dashed rgba(255,255,255,0.4);z-index:5}
-        .crosshair-label{pointer-events:none;position:absolute;color:#ffc107;font-size:12px;font-weight:700;background:rgba(0,0,0,0.7);padding:2px 6px;border-radius:4px;z-index:6}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .whale-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .whale-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .transaction-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 12px;
+        }
+
+        .coin-symbol {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .amount-usd {
+            font-size: 16px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-buy {
+            background: rgba(0, 255, 100, 0.2);
+            color: #00ff64;
+        }
+
+        .badge-sell {
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff3232;
+        }
+
+        .badge-transfer {
+            background: rgba(0, 180, 255, 0.2);
+            color: #00b4ff;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1 style="text-align:center; margin-bottom:20px;">🐋 Whale Tracker</h1>
 
-<div class="app" id="app">
-    <button class="top-btn" id="mainBtn">📊 Индикаторы</button>
-    <div class="content">
-        <div id="mainPage">
-            <div class="coins-list" id="coinsList"><div class="loading">Загрузка...</div></div>
-        </div>
-    </div>
-</div>
+        <button class="whale-btn" onclick="loadWhales()" id="whaleButton">
+            🐋 КИТ
+        </button>
 
-<div id="indicatorsPage">
-    <button class="back-btn" id="backInd">←</button>
-    <div class="indicator-box">
-        <div class="indicator-title">₿ Bitcoin ETF</div>
-        <div class="indicator-subtitle">Притоки / Оттоки за 30 дней</div>
-        <div class="indicator-chart-container"><canvas id="btcEtf"></canvas></div>
-        <div class="indicator-stats">
-            <div class="indicator-stat"><div class="indicator-stat-label">Всего</div><div class="indicator-stat-value" id="btcTotal">+$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Средний</div><div class="indicator-stat-value" id="btcAvg">$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Макс приток</div><div class="indicator-stat-value positive" id="btcMax">$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Макс отток</div><div class="indicator-stat-value negative" id="btcMin">$0.0M</div></div>
-        </div>
-    </div>
-    <div class="indicator-box">
-        <div class="indicator-title">⟠ Ethereum ETF</div>
-        <div class="indicator-subtitle">Притоки / Оттоки за 30 дней</div>
-        <div class="indicator-chart-container"><canvas id="ethEtf"></canvas></div>
-        <div class="indicator-stats">
-            <div class="indicator-stat"><div class="indicator-stat-label">Всего</div><div class="indicator-stat-value" id="ethTotal">+$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Средний</div><div class="indicator-stat-value" id="ethAvg">$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Макс приток</div><div class="indicator-stat-value positive" id="ethMax">$0.0M</div></div>
-            <div class="indicator-stat"><div class="indicator-stat-label">Макс отток</div><div class="indicator-stat-value negative" id="ethMin">$0.0M</div></div>
-        </div>
-    </div>
-</div>
-
-<div id="chartPage">
-    <button class="back-btn" id="backChart">←</button>
-    <div class="chart-header" id="chartTitle">Bitcoin</div>
-    <div class="chart-price-display" id="chartPrice">$0.00</div>
-    <div class="chart-change-display" id="chartChange">+0.00%</div>
-    <div class="chart-container-main" id="chartContainer">
-        <canvas id="priceChart"></canvas>
-        <div class="crosshair-line-h" id="chH"></div>
-        <div class="crosshair-line-v" id="chV"></div>
-        <div class="crosshair-label" id="chL">$0.00</div>
-    </div>
-    <div class="timeframes">
-        <button class="timeframe-btn" data-days="0.166">4ч</button>
-        <button class="timeframe-btn" data-days="0.5">12ч</button>
-        <button class="timeframe-btn active" data-days="1">1д</button>
-        <button class="timeframe-btn" data-days="7">1н</button>
-        <button class="timeframe-btn" data-days="30">1м</button>
-        <button class="timeframe-btn" data-days="90">3м</button>
-        <button class="timeframe-btn" data-days="180">6м</button>
-        <button class="timeframe-btn" data-days="365">1г</button>
-    </div>
-</div>
-
-<script>
-const $ = id => document.getElementById(id);
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
-
-let chart = null;
-let currentCoinId = 'bitcoin';
-let currentDays = 1;
-let updateInterval = null;
-let currentPrice = 0;
-let isTouching = false;
-
-const coins = [
-    {id:'bitcoin', name:'Bitcoin', symbol:'btc', icon:'₿'},
-    {id:'ethereum', name:'Ethereum', symbol:'eth', icon:'⟠'},
-    {id:'binancecoin', name:'BNB', symbol:'bnb', icon:'B'},
-    {id:'ripple', name:'XRP', symbol:'xrp', icon:'✕'},
-    {id:'solana', name:'Solana', symbol:'sol', icon:'◎'},
-    {id:'tron', name:'TRX', symbol:'trx', icon:'T'},
-    {id:'hyperliquid', name:'Hype', symbol:'hype', icon:'◆'}
-];
-
-const coinMap = {};
-coins.forEach(c => coinMap[c.id] = c.name);
-
-// === ВАШИ ДАННЫЕ ETF ===
-const etfData = [
-    {"date": "2024-04-12", "total_net_inflow": -55066297, "total_value_traded": 4706120449, "total_net_assets": 56216535367, "cum_net_inflow": 13534833596},
-    {"date": "2024-04-11", "total_net_inflow": 91269283, "total_value_traded": 2498627928, "total_net_assets": 59225065270, "cum_net_inflow": 12581438056}
-];
-
-// === API КЛЮЧ ДЛЯ COINMARKETCAP ===
-const CMC_API_KEY = 'ваш-api-ключ-здесь'; // ЗАМЕНИТЕ НА СВОЙ КЛЮЧ
-
-// Навигация
-$('mainBtn').onclick = function() {
-    $('app').style.display = 'none';
-    $('indicatorsPage').style.display = 'flex';
-    initETFs();
-};
-
-$('backInd').onclick = function() {
-    $('indicatorsPage').style.display = 'none';
-    $('app').style.display = 'flex';
-};
-
-$('backChart').onclick = function() {
-    if (updateInterval) {
-        clearInterval(updateInterval);
-        updateInterval = null;
-    }
-    $('chartPage').style.display = 'none';
-    $('app').style.display = 'flex';
-};
-
-// === ФУНКЦИИ ДЛЯ РАБОТЫ С ETF ===
-
-function getETFDataFromArray(symbol) {
-    if (!etfData || etfData.length < 2) {
-        return generateTestData(30);
-    }
-    
-    const data = etfData.slice(0, 30).map(item => {
-        return Math.round((item.total_net_inflow / 1000000) * 10) / 10;
-    });
-    
-    while (data.length < 30) {
-        data.unshift(0);
-    }
-    
-    return data;
-}
-
-async function fetchETFDataFromCMC(symbol) {
-    try {
-        const id = symbol === 'btc' ? '1' : '1027';
-        const url = `https://pro-api.coinmarketcap.com/v1/simple/price?ids=${id}&convert=USD`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'X-CMC_PRO_API_KEY': CMC_API_KEY,
-                'Accept': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('CMC Data:', data);
-        
-        if (data.data && data.data.length > 0) {
-            const coinData = data.data.find(c => c.id.toString() === id);
-            if (coinData && coinData.price) {
-                return generateETFDataFromPrice(coinData.price);
-            }
-        }
-        return getETFDataFromArray(symbol);
-    } catch(e) {
-        console.error('Error fetching ETF data from CMC:', e);
-        return getETFDataFromArray(symbol);
-    }
-}
-
-function generateETFDataFromPrice(price) {
-    const data = [];
-    let baseValue = Math.round((price / 1000) * 10) / 10;
-    baseValue = Math.max(1, Math.min(100, baseValue));
-    
-    for (let i = 0; i < 30; i++) {
-        const variation = (Math.random() - 0.5) * 20;
-        let dayValue = baseValue + variation;
-        dayValue = Math.round(dayValue * 10) / 10;
-        dayValue = Math.max(-100, Math.min(100, dayValue));
-        data.push(dayValue);
-    }
-    return data;
-}
-
-function generateTestData(days = 30) {
-    const data = [];
-    let value = 0;
-    for (let i = 0; i < days; i++) {
-        value = Math.max(-100, Math.min(100, value + (Math.random() - 0.5) * 80));
-        data.push(Math.round(value * 10) / 10);
-    }
-    return data;
-}
-
-let etfInstances = {};
-
-function drawETFChart(canvasId, data, color, prefix) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-    
-    if (etfInstances[canvasId]) {
-        etfInstances[canvasId].destroy();
-        delete etfInstances[canvasId];
-    }
-    
-    while (data.length < 30) {
-        data.unshift(0);
-    }
-    
-    const displayData = data.slice(-30);
-    
-    const total = displayData.reduce((a, b) => a + b, 0);
-    const avg = total / displayData.length;
-    const max = Math.max(...displayData);
-    const min = Math.min(...displayData);
-    
-    const updateStat = (id, value, className = '') => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = value;
-            el.className = 'indicator-stat-value ' + className;
-        }
-    };
-    
-    updateStat(prefix + 'Total', (total >= 0 ? '+' : '') + total.toFixed(1) + 'M', total >= 0 ? 'positive' : 'negative');
-    updateStat(prefix + 'Avg', '$' + avg.toFixed(1) + 'M');
-    updateStat(prefix + 'Max', '+$' + max.toFixed(1) + 'M', 'positive');
-    updateStat(prefix + 'Min', '-$' + Math.abs(min).toFixed(1) + 'M', 'negative');
-    
-    const barColors = displayData.map(v => v >= 0 ? color : '#f44336');
-    
-    etfInstances[canvasId] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: displayData.map((_, i) => i + 1),
-            datasets: [{
-                data: displayData,
-                backgroundColor: barColors,
-                borderColor: barColors,
-                borderWidth: 1,
-                borderRadius: 2,
-                barPercentage: 0.8,
-                categoryPercentage: 0.9
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const val = context.parsed.y;
-                            return (val >= 0 ? 'Приток: +' : 'Отток: ') + val.toFixed(1) + 'M';
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: 'rgba(255,255,255,0.2)', maxTicksLimit: 10, font: { size: 7 } }
-                },
-                y: {
-                    grid: { color: 'rgba(255,255,255,0.08)' },
-                    ticks: { 
-                        color: 'rgba(255,255,255,0.2)', 
-                        callback: v => (v >= 0 ? '+' : '') + v + 'M',
-                        font: { size: 8 }
-                    }
-                }
-            }
-        },
-        plugins: [{
-            afterDraw: function(chart) {
-                const yScale = chart.scales.y;
-                const xScale = chart.scales.x;
-                const ctx = chart.ctx;
-                const zeroY = yScale.getPixelForValue(0);
-                
-                ctx.save();
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([4, 4]);
-                ctx.moveTo(xScale.left, zeroY);
-                ctx.lineTo(xScale.right, zeroY);
-                ctx.stroke();
-                ctx.restore();
-                
-                ctx.save();
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.font = '8px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText('0', xScale.right + 2, zeroY + 3);
-                ctx.restore();
-            }
-        }]
-    });
-}
-
-async function initETFs() {
-    try {
-        const [btcData, ethData] = await Promise.all([
-            fetchETFDataFromCMC('btc'),
-            fetchETFDataFromCMC('eth')
-        ]);
-        
-        drawETFChart('btcEtf', btcData, '#f7931a', 'btc');
-        drawETFChart('ethEtf', ethData, '#627eea', 'eth');
-    } catch(e) {
-        console.error('Error initializing ETFs:', e);
-        const btcData = getETFDataFromArray('btc');
-        const ethData = getETFDataFromArray('eth');
-        drawETFChart('btcEtf', btcData, '#f7931a', 'btc');
-        drawETFChart('ethEtf', ethData, '#627eea', 'eth');
-    }
-}
-
-// === ЗАГРУЗКА СПИСКА МОНЕТ ===
-let cache = null;
-
-async function loadCoins() {
-    try {
-        if (cache) {
-            renderCoins(cache);
-        }
-        
-        const ids = coins.map(c => c.id).join(',');
-        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
-        
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const data = await response.json();
-        cache = data;
-        renderCoins(data);
-    } catch(e) {
-        console.error('Error loading coins:', e);
-        if (!cache) {
-            const list = $('coinsList');
-            if (list) {
-                list.innerHTML = '<div class="loading">❌ Ошибка загрузки. Повтор...</div>';
-            }
-            setTimeout(loadCoins, 3000);
-        }
-    }
-}
-
-function renderCoins(data) {
-    const list = $('coinsList');
-    if (!list) return;
-    
-    list.innerHTML = '';
-    
-    coins.forEach((coin, index) => {
-        const info = data[coin.id];
-        const div = document.createElement('div');
-        div.className = 'coin-item';
-        
-        let priceHtml = '<div class="coin-price">--</div>';
-        let changeHtml = '<div class="coin-change-24h" style="color:rgba(255,255,255,0.3);">--</div>';
-        
-        if (info && info.usd !== undefined) {
-            const price = info.usd;
-            const change = info.usd_24h_change || 0;
-            const changeClass = change >= 0 ? 'green' : 'red';
-            const changeText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
-            
-            priceHtml = `<div class="coin-price">$${price.toFixed(2)}</div>`;
-            changeHtml = `<div class="coin-change-24h ${changeClass}">${changeText}</div>`;
-        }
-        
-        div.innerHTML = `
-            <span class="coin-number">${index + 1}</span>
-            <div class="coin-icon ${coin.symbol}">${coin.icon}</div>
-            <div class="coin-info">
-                <div class="coin-name">${coin.name}</div>
-                <div class="coin-symbol">${coin.symbol.toUpperCase()}</div>
+        <div id="transactionsList">
+            <div style="text-align: center; color: #666; padding: 40px;">
+                Нажми КИТ для загрузки
             </div>
-            ${priceHtml}
-            ${changeHtml}
-        `;
-        
-        div.onclick = function() {
-            openChart(coin.id);
-        };
-        
-        list.appendChild(div);
-    });
-}
+        </div>
+    </div>
 
-// === ГРАФИК ЦЕНЫ ===
-async function fetchChartData(id, days) {
-    try {
-        const url = `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        return data.prices || [];
-    } catch(e) {
-        console.error('Error fetching chart data:', e);
-        return [];
-    }
-}
+    <script>
+        const demoTtransactions = [
+            { symbol: 'BTC', name: 'Bitcoin', amount: 1500, amount_usd: 45000000, type: 'transfer' },
+            { symbol: 'ETH', name: 'Ethereum', amount: 25000, amount_usd: 37500000, type: 'buy' },
+            { symbol: 'USDT', name: 'Tether', amount: 50000000, amount_usd: 50000000, type: 'transfer' },
+            { symbol: 'BNB', name: 'Binance Coin', amount: 100000, amount_usd: 23000000, type: 'sell' },
+            { symbol: 'SOL', name: 'Solana', amount: 500000, amount_usd: 75000000, type: 'buy' }
+        ];
 
-function drawChart(ctx, prices) {
-    const labels = prices.map(p => {
-        const d = new Date(p[0]);
-        if (currentDays >= 180) {
-            return d.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
-        } else {
-            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        function loadWhales() {
+            const button = document.getElementById('whaleButton');
+            const list = document.getElementById('transactionsList');
+            
+            button.classList.add('loading');
+            button.textContent = '⏳ Загрузка...';
+            
+            list.innerHTML = '<div class="loader"><div class="spinner"></div><p>Отслеживаем китов...</p></div>';
+
+            setTimeout(() => {
+                button.classList.remove('loading');
+                button.textContent = '🐋 КИТ';
+                
+                list.innerHTML = demoTtransactions.map(tx => `
+                    <div class="transaction-card">
+                        <div>
+                            <span class="coin-symbol">${tx.symbol}</span>
+                            <span class="badge badge-${tx.type}">${tx.type === 'buy' ? 'Покупка' : tx.type === 'sell' ? 'Продажа' : 'Перевод'}</span>
+                        </div>
+                        <div style="font-size:18px; font-weight:bold; margin:8px 0;">
+                            ${tx.amount.toLocaleString()} ${tx.symbol}
+                        </div>
+                        <div class="amount-usd">
+                            ≈ $${(tx.amount_usd / 1000000).toFixed(1)}M
+                        </div>
+                    </div>
+                `).join('');
+            }, 1500);
         }
-    });
-    
-    const values = prices.map(p => p[1]);
-    window._vals = values;
-    window._prices = prices;
-    
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(255,193,7,0.3)');
-    gradient.addColorStop(1, 'rgba(255,193,7,0.0)');
-    
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                borderColor: '#ffc107',
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0,
-                pointHoverRadius: 6,
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
-            },
-            scales: {
-                x: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: 'rgba(255,255,255,0.4)', maxTicksLimit: 10, maxRotation: 30 }
-                },
-                y: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: 'rgba(255,255,255,0.4)', callback: v => '$' + v.toFixed(0) }
-                }
-            }
-        }
-    });
-    
-    if (prices.length) {
-        currentPrice = prices[prices.length - 1][1];
-    }
-}
-
-function updateCrosshair(x, y) {
-    const canvas = $('priceChart');
-    if (!canvas || !chart) return;
-    
-    const canvasRect = canvas.getBoundingClientRect();
-    const chartArea = chart.chartArea;
-    const xScale = chart.scales.x;
-    const yScale = chart.scales.y;
-    
-    let idx = 0;
-    let dist = Infinity;
-    for (let i = 0; i < window._vals.length; i++) {
-        const px = xScale.getPixelForValue(i);
-        const d = Math.abs(px - (x - canvasRect.left));
-        if (d < dist) {
-            dist = d;
-            idx = i;
-        }
-    }
-    
-    const xPos = xScale.getPixelForValue(idx);
-    const yPos = yScale.getPixelForValue(window._vals[idx]);
-    
-    if (xPos < chartArea.left || xPos > chartArea.right || yPos < chartArea.top || yPos > chartArea.bottom) {
-        hideCrosshair();
-        return;
-    }
-    
-    const containerRect = $('chartContainer').getBoundingClientRect();
-    
-    $('chH').style.cssText = `display:block;left:0;width:100%;top:${yPos - containerRect.top}px;`;
-    $('chV').style.cssText = `display:block;top:0;height:100%;left:${xPos - containerRect.left}px;`;
-    $('chL').style.cssText = `display:block;left:${xPos - containerRect.left + 10}px;top:${yPos - containerRect.top - 10}px;`;
-    $('chL').textContent = '$' + window._vals[idx].toFixed(2);
-    $('chartPrice').textContent = '$' + window._vals[idx].toFixed(2);
-    $('chartPrice').classList.add('touch');
-    isTouching = true;
-}
-
-function hideCrosshair() {
-    ['chH', 'chV', 'chL'].forEach(id => {
-        const el = $(id);
-        if (el) el.style.display = 'none';
-    });
-    
-    if (isTouching) {
-        $('chartPrice').textContent = '$' + currentPrice.toFixed(2);
-        $('chartPrice').classList.remove('touch');
-        isTouching = false;
-    }
-}
-
-async function updateChart(id, days) {
-    const prices = await fetchChartData(id, days);
-    if (!prices.length) return;
-    
-    currentPrice = prices[prices.length - 1][1];
-    const prev = prices[0][1];
-    const change = prev ? ((currentPrice - prev) / prev * 100) : 0;
-    
-    if (!isTouching) {
-        $('chartPrice').textContent = '$' + currentPrice.toFixed(2);
-        $('chartPrice').classList.remove('touch');
-    }
-    
-    const changeClass = change >= 0 ? 'green' : 'red';
-    const changeText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
-    $('chartChange').textContent = changeText;
-    $('chartChange').className = 'chart-change-display ' + changeClass;
-    
-    const ctx = $('priceChart').getContext('2d');
-    if (chart) chart.destroy();
-    drawChart(ctx, prices);
-    hideCrosshair();
-}
-
-function openChart(id) {
-    currentCoinId = id;
-    $('app').style.display = 'none';
-    $('chartPage').style.display = 'flex';
-    $('chartTitle').textContent = coinMap[id] || id;
-    
-    document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.timeframe-btn[data-days="1"]').classList.add('active');
-    
-    currentDays = 1;
-    isTouching = false;
-    updateChart(id, 1);
-    
-    if (updateInterval) {
-        clearInterval(updateInterval);
-    }
-    updateInterval = setInterval(() => updateChart(currentCoinId, currentDays), 60000);
-}
-
-// Обработчики таймфреймов
-document.querySelectorAll('.timeframe-btn').forEach(btn => {
-    btn.onclick = function() {
-        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentDays = parseFloat(this.dataset.days);
-        isTouching = false;
-        updateChart(currentCoinId, currentDays);
-    };
-});
-
-// Обработчики crosshair
-const priceChart = $('priceChart');
-if (priceChart) {
-    ['mousemove', 'touchmove'].forEach(ev => {
-        priceChart.addEventListener(ev, function(e) {
-            e.preventDefault();
-            const c = ev === 'touchmove' ? e.touches[0] : e;
-            updateCrosshair(c.clientX, c.clientY);
-        }, { passive: false });
-    });
-    
-    priceChart.addEventListener('mouseleave', hideCrosshair);
-    priceChart.addEventListener('touchend', hideCrosshair);
-    priceChart.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        const t = e.touches[0];
-        updateCrosshair(t.clientX, t.clientY);
-    }, { passive: false });
-}
-
-// ЗАПУСК
-loadCoins();
-setInterval(loadCoins, 60000);
-</script>
+    </script>
 </body>
 </html>
