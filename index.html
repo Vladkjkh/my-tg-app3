@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>КИТ</title>
+    <title>🐋 КИТ</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
@@ -18,12 +13,7 @@
             padding: 20px;
             color: #fff;
         }
-
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
+        .container { max-width: 500px; margin: 0 auto; }
         .whale-btn {
             width: 100%;
             padding: 20px;
@@ -32,130 +22,119 @@
             letter-spacing: 4px;
             border: 2px solid #00d4ff;
             border-radius: 15px;
-            background: rgba(0, 212, 255, 0.1);
+            background: rgba(0,212,255,0.1);
             color: #00d4ff;
             cursor: pointer;
             margin-bottom: 20px;
         }
-
-        .whale-btn:hover {
-            background: rgba(0, 212, 255, 0.2);
-        }
-
+        .whale-btn:active { background: rgba(0,212,255,0.3); }
         .transaction-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 15px;
             padding: 18px;
             margin-bottom: 12px;
         }
-
-        .coin-symbol {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00d4ff;
-        }
-
-        .amount-usd {
-            font-size: 16px;
-            color: #ffd700;
-            font-weight: bold;
-        }
-
+        .coin-symbol { font-size: 20px; font-weight: bold; color: #f7931a; }
+        .amount { font-size: 18px; font-weight: bold; margin: 8px 0; }
+        .amount-usd { font-size: 16px; color: #ffd700; font-weight: bold; }
         .badge {
+            display: inline-block;
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: bold;
+            background: rgba(247,147,26,0.2);
+            color: #f7931a;
         }
-
-        .badge-buy {
-            background: rgba(0, 255, 100, 0.2);
-            color: #00ff64;
+        .hash {
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            word-break: break-all;
+            font-family: monospace;
         }
-
-        .badge-sell {
-            background: rgba(255, 50, 50, 0.2);
-            color: #ff3232;
-        }
-
-        .badge-transfer {
-            background: rgba(0, 180, 255, 0.2);
-            color: #00b4ff;
-        }
-
-        .loader {
-            text-align: center;
-            padding: 40px;
-        }
-
+        .loader { text-align: center; padding: 40px; }
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #00d4ff;
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #f7931a;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 15px;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 style="text-align:center; margin-bottom:20px;">🐋 Whale Tracker</h1>
+        <h1 style="text-align:center; margin-bottom:10px;">🐋 Bitcoin Whale Tracker</h1>
+        <p style="text-align:center; color:#888; margin-bottom:20px; font-size:14px;">Реальные транзакции из блокчейна</p>
 
         <button class="whale-btn" onclick="loadWhales()" id="whaleButton">
             🐋 КИТ
         </button>
 
         <div id="transactionsList">
-            <div style="text-align: center; color: #666; padding: 40px;">
+            <div style="text-align:center; color:#666; padding:40px;">
                 Нажми КИТ для загрузки
             </div>
         </div>
     </div>
 
     <script>
-        const demoTtransactions = [
-            { symbol: 'BTC', name: 'Bitcoin', amount: 1500, amount_usd: 45000000, type: 'transfer' },
-            { symbol: 'ETH', name: 'Ethereum', amount: 25000, amount_usd: 37500000, type: 'buy' },
-            { symbol: 'USDT', name: 'Tether', amount: 50000000, amount_usd: 50000000, type: 'transfer' },
-            { symbol: 'BNB', name: 'Binance Coin', amount: 100000, amount_usd: 23000000, type: 'sell' },
-            { symbol: 'SOL', name: 'Solana', amount: 500000, amount_usd: 75000000, type: 'buy' }
-        ];
-
-        function loadWhales() {
+        async function loadWhales() {
             const button = document.getElementById('whaleButton');
             const list = document.getElementById('transactionsList');
             
-            button.classList.add('loading');
-            button.textContent = '⏳ Загрузка...';
-            
-            list.innerHTML = '<div class="loader"><div class="spinner"></div><p>Отслеживаем китов...</p></div>';
+            button.style.opacity = '0.7';
+            button.textContent = '⏳ Сканируем блокчейн...';
+            list.innerHTML = '<div class="loader"><div class="spinner"></div><p style="color:#888;">Ищем китов в реальном времени...</p></div>';
 
-            setTimeout(() => {
-                button.classList.remove('loading');
-                button.textContent = '🐋 КИТ';
+            try {
+                const response = await fetch('https://blockchain.info/unconfirmed-transactions?format=json');
+                const data = await response.json();
                 
-                list.innerHTML = demoTtransactions.map(tx => `
-                    <div class="transaction-card">
-                        <div>
-                            <span class="coin-symbol">${tx.symbol}</span>
-                            <span class="badge badge-${tx.type}">${tx.type === 'buy' ? 'Покупка' : tx.type === 'sell' ? 'Продажа' : 'Перевод'}</span>
+                // Фильтруем только крупные транзакции (>10 BTC)
+                const whales = data.txs.filter(tx => {
+                    const total = tx.out.reduce((sum, out) => sum + out.value, 0);
+                    return total > 1000000000; // >10 BTC
+                }).slice(0, 10);
+
+                button.style.opacity = '1';
+                button.textContent = '🐋 КИТ';
+
+                if (whales.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; color:#888; padding:40px;">🐋 Киты пока спят...<br><span style="font-size:12px;">Нет крупных транзакций в мемпуле</span></div>';
+                    return;
+                }
+
+                list.innerHTML = whales.map(tx => {
+                    const totalSat = tx.out.reduce((sum, out) => sum + out.value, 0);
+                    const btc = totalSat / 100000000;
+                    const usd = btc * 60000; // Примерный курс
+
+                    return `
+                        <div class="transaction-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="coin-symbol">₿ BTC</span>
+                                <span class="badge">🐋 КИТ</span>
+                            </div>
+                            <div class="amount">${btc.toFixed(4)} BTC</div>
+                            <div class="amount-usd">≈ $${usd.toLocaleString()}</div>
+                            <div style="font-size:11px; color:#aaa; margin-top:5px;">
+                                ${tx.out.length} выходов • ${tx.size} bytes
+                            </div>
+                            <div class="hash">TX: ${tx.hash}</div>
                         </div>
-                        <div style="font-size:18px; font-weight:bold; margin:8px 0;">
-                            ${tx.amount.toLocaleString()} ${tx.symbol}
-                        </div>
-                        <div class="amount-usd">
-                            ≈ $${(tx.amount_usd / 1000000).toFixed(1)}M
-                        </div>
-                    </div>
-                `).join('');
-            }, 1500);
+                    `;
+                }).join('');
+
+            } catch (error) {
+                button.style.opacity = '1';
+                button.textContent = '🐋 КИТ';
+                list.innerHTML = '<div style="text-align:center; color:#ff4444; padding:40px;">⚠️ Ошибка подключения к блокчейну<br><span style="font-size:12px;">Попробуй позже</span></div>';
+            }
         }
     </script>
 </body>
