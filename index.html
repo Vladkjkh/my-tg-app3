@@ -27,7 +27,6 @@
             cursor: pointer;
             margin-bottom: 15px;
         }
-        .load-btn:active { background: rgba(247,147,26,0.3); }
         .card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -46,8 +45,7 @@
         .badge-sell { background: rgba(255,68,68,0.15); color: #ff4444; }
         .badge-transfer { background: rgba(0,180,255,0.15); color: #00b4ff; }
         .btc-amount { font-size: 26px; font-weight: bold; color: #f7931a; margin-top: 8px; }
-        .usd-amount { font-size: 16px; color: #ffd700; margin: 3px 0; }
-        .time-text { font-size: 11px; color: #888; }
+        .usd-amount { font-size: 16px; color: #ffd700; }
         .addr-box {
             font-size: 10px;
             color: #aaa;
@@ -64,7 +62,6 @@
             padding: 10px;
             margin-top: 8px;
         }
-        .history-title { font-size: 11px; color: #888; margin-bottom: 6px; }
         .row { display: flex; gap: 6px; }
         .stat {
             flex: 1;
@@ -73,18 +70,18 @@
             padding: 8px;
             text-align: center;
         }
-        .stat-val { font-size: 16px; font-weight: bold; }
-        .stat-lbl { font-size: 9px; color: #888; }
+        .stat-val { font-size: 14px; font-weight: bold; }
+        .stat-lbl { font-size: 8px; color: #888; }
         .green { color: #00ff64; }
         .red { color: #ff4444; }
-        .loader { text-align: center; padding: 40px; }
+        .loader { text-align: center; padding: 30px; }
         .spinner {
-            width: 40px; height: 40px;
+            width: 30px; height: 30px;
             border: 3px solid rgba(255,255,255,0.1);
             border-top-color: #f7931a;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -92,7 +89,7 @@
 <body>
     <div class="container">
         <h2 style="text-align:center;">🐋 Bitcoin Whales</h2>
-        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Последние подтверждённые транзакции от 200 BTC</p>
+        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Транзакции от 200 BTC из последних блоков</p>
 
         <button class="load-btn" onclick="load()" id="btn">
             🐋 ЗАГРУЗИТЬ КИТОВ
@@ -100,166 +97,87 @@
 
         <div id="list">
             <div style="text-align:center; color:#555; padding:30px;">
-                Нажми кнопку для загрузки
+                Нажми кнопку
             </div>
         </div>
     </div>
 
     <script>
-        async function getAddressInfo(address) {
-            try {
-                const response = await fetch(`https://blockchain.info/rawaddr/${address}?limit=50`);
-                const data = await response.json();
-                
-                const sixMonthsAgo = Date.now() / 1000 - (180 * 24 * 60 * 60);
-                
-                let buys = 0;
-                let sells = 0;
-                
-                data.txs.forEach(tx => {
-                    if (tx.time < sixMonthsAgo) return;
-                    
-                    const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0);
-                    const totalOut = tx.out.reduce((s, o) => s + o.value, 0);
-                    
-                    if (totalIn > totalOut) buys++;
-                    else if (totalOut > totalIn) sells++;
-                });
-                
-                return {
-                    buys,
-                    sells,
-                    totalTx: data.n_tx,
-                    balance: data.final_balance / 100000000,
-                    totalReceived: data.total_received / 100000000,
-                    totalSent: data.total_sent / 100000000
-                };
-            } catch (e) {
-                return { buys: 0, sells: 0, totalTx: 0, balance: 0, totalReceived: 0, totalSent: 0 };
-            }
-        }
-
         async function load() {
             const btn = document.getElementById('btn');
             const list = document.getElementById('list');
             
-            btn.textContent = '⏳ Загружаем блоки...';
-            btn.style.opacity = '0.7';
-            list.innerHTML = '<div class="loader"><div class="spinner"></div><p style="color:#888;">Сканируем последние блоки...</p></div>';
+            btn.textContent = '⏳ Загружаем...';
+            list.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 
             try {
-                // Получаем последние блоки
-                const blocksRes = await fetch('https://blockchain.info/blocks?format=json');
-                const blocks = await blocksRes.json();
+                // Получаем последний блок
+                const latestRes = await fetch('https://blockchain.info/latestblock');
+                const latest = await latestRes.json();
                 
-                let allBigTx = [];
+                // Получаем содержимое блока
+                const blockRes = await fetch(`https://blockchain.info/rawblock/${latest.hash}`);
+                const block = await blockRes.json();
                 
-                // Проходим по последним блокам и собираем транзакции от 200 BTC
-                for (const block of blocks.blocks.slice(0, 5)) {
-                    const blockRes = await fetch(`https://blockchain.info/rawblock/${block.hash}`);
-                    const blockData = await blockRes.json();
-                    
-                    const bigTx = blockData.tx.filter(tx => {
-                        const total = tx.out.reduce((s, o) => s + o.value, 0);
-                        return total >= 20000000000;
-                    });
-                    
-                    allBigTx = allBigTx.concat(bigTx);
-                    if (allBigTx.length >= 10) break;
-                }
-                
-                // Берём первые 10
-                const whales = allBigTx.slice(0, 10);
+                // Фильтруем транзакции от 200 BTC
+                const whales = block.tx.filter(tx => {
+                    const total = tx.out.reduce((s, o) => s + o.value, 0);
+                    return total >= 20000000000;
+                }).slice(0, 10);
 
                 btn.textContent = '🐋 ЗАГРУЗИТЬ КИТОВ';
-                btn.style.opacity = '1';
 
                 if (!whales.length) {
-                    list.innerHTML = '<div style="text-align:center; color:#888; padding:30px;">🐋 В последних блоках нет транзакций от 200 BTC</div>';
+                    list.innerHTML = `<div style="text-align:center; color:#888; padding:30px;">
+                        🐋 В блоке #${latest.height} нет транзакций от 200 BTC<br>
+                        <span style="font-size:11px;">Блок: ${new Date(block.time * 1000).toLocaleString('ru-RU')}</span>
+                    </div>`;
                     return;
                 }
 
-                list.innerHTML = '<div class="loader"><div class="spinner"></div><p style="color:#888;">Загружаем историю...</p></div>';
-
-                const result = await Promise.all(whales.map(async tx => {
+                list.innerHTML = whales.map((tx, i) => {
                     const totalSat = tx.out.reduce((s, o) => s + o.value, 0);
                     const btc = totalSat / 100000000;
-                    
-                    const addr = tx.out.find(o => o.addr)?.addr || 
-                                 tx.inputs[0]?.prev_out?.addr || 
-                                 'Неизвестно';
-                    
-                    const history = await getAddressInfo(addr);
+                    const addr = tx.out.find(o => o.addr)?.addr || 'Неизвестно';
+                    const hash = tx.hash;
                     
                     const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0);
                     const totalOut = tx.out.reduce((s, o) => s + o.value, 0);
-                    const type = totalIn > totalOut ? 'buy' : totalOut > totalIn ? 'sell' : 'transfer';
                     
-                    return { btc, addr, time: tx.time, history, type, hash: tx.hash };
-                }));
-
-                result.sort((a, b) => b.time - a.time);
-
-                list.innerHTML = result.map((r, i) => {
-                    const typeLabel = r.type === 'buy' ? '🟢 ПОКУПКА' : 
-                                     r.type === 'sell' ? '🔴 ПРОДАЖА' : 
-                                     '🔵 ПЕРЕВОД';
-                    const badgeClass = r.type === 'buy' ? 'badge-buy' : 
-                                      r.type === 'sell' ? 'badge-sell' : 
-                                      'badge-transfer';
+                    let type = 'transfer';
+                    let typeLabel = '🔵 ПЕРЕВОД';
+                    let badgeClass = 'badge-transfer';
+                    
+                    if (totalIn > totalOut * 1.1) {
+                        type = 'buy';
+                        typeLabel = '🟢 ПОКУПКА';
+                        badgeClass = 'badge-buy';
+                    } else if (totalOut > totalIn * 1.1) {
+                        type = 'sell';
+                        typeLabel = '🔴 ПРОДАЖА';
+                        badgeClass = 'badge-sell';
+                    }
                     
                     return `
                         <div class="card">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-size:11px; color:#666;">КИТ #${i + 1}</span>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="font-size:11px; color:#666;">Блок #${latest.height}</span>
                                 <span class="type-badge ${badgeClass}">${typeLabel}</span>
                             </div>
-                            
-                            <div class="btc-amount">₿ ${r.btc.toFixed(2)} BTC</div>
-                            <div class="usd-amount">≈ $${(r.btc * 60000).toLocaleString()}</div>
-                            
-                            <div class="time-text">
-                                🕐 ${new Date(r.time * 1000).toLocaleString('ru-RU', {
-                                    day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
-                                })}
+                            <div class="btc-amount">₿ ${btc.toFixed(2)} BTC</div>
+                            <div class="usd-amount">≈ $${(btc * 60000).toLocaleString()}</div>
+                            <div style="font-size:10px; color:#888;">
+                                🕐 ${new Date(block.time * 1000).toLocaleString('ru-RU')}
                             </div>
-                            
-                            <div class="addr-box">
-                                📍 ${r.addr}
-                            </div>
-                            
-                            <div class="history-box">
-                                <div class="history-title">
-                                    📊 За 6 месяцев | Баланс: ${r.history.balance.toFixed(2)} BTC
-                                </div>
-                                <div class="row">
-                                    <div class="stat">
-                                        <div class="stat-val green">${r.history.buys}</div>
-                                        <div class="stat-lbl">Покупок</div>
-                                    </div>
-                                    <div class="stat">
-                                        <div class="stat-val red">${r.history.sells}</div>
-                                        <div class="stat-lbl">Продаж</div>
-                                    </div>
-                                    <div class="stat">
-                                        <div class="stat-val" style="color:#f7931a;">${r.history.totalReceived.toFixed(1)}</div>
-                                        <div class="stat-lbl">Получено BTC</div>
-                                    </div>
-                                    <div class="stat">
-                                        <div class="stat-val" style="color:#ffd700;">${r.history.totalSent.toFixed(1)}</div>
-                                        <div class="stat-lbl">Отправлено BTC</div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="addr-box">📍 ${addr}</div>
+                            <div style="font-size:9px; color:#555; word-break:break-all;">TX: ${hash}</div>
                         </div>
                     `;
                 }).join('');
 
             } catch (e) {
                 btn.textContent = '🐋 ЗАГРУЗИТЬ КИТОВ';
-                btn.style.opacity = '1';
-                list.innerHTML = '<div style="text-align:center; color:#ff4444; padding:30px;">⚠️ Ошибка загрузки</div>';
-                console.error(e);
+                list.innerHTML = '<div style="text-align:center; color:#ff4444;">⚠️ Ошибка. Попробуй позже.</div>';
             }
         }
     </script>
