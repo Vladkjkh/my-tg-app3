@@ -27,12 +27,13 @@
             cursor: pointer;
             margin-bottom: 15px;
         }
+        .load-btn:active { background: rgba(247,147,26,0.3); }
         .card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             padding: 15px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .type-badge {
             display: inline-block;
@@ -43,8 +44,10 @@
         }
         .badge-buy { background: rgba(0,255,100,0.15); color: #00ff64; }
         .badge-sell { background: rgba(255,68,68,0.15); color: #ff4444; }
-        .btc-amount { font-size: 26px; font-weight: bold; color: #f7931a; margin-top: 8px; }
-        .usd-amount { font-size: 16px; color: #ffd700; }
+        .badge-transfer { background: rgba(0,180,255,0.15); color: #00b4ff; }
+        .btc-amount { font-size: 24px; font-weight: bold; color: #f7931a; margin-top: 5px; }
+        .usd-amount { font-size: 15px; color: #ffd700; }
+        .time-text { font-size: 11px; color: #888; }
         .addr-box {
             font-size: 10px;
             color: #aaa;
@@ -55,14 +58,47 @@
             font-family: monospace;
             word-break: break-all;
         }
-        .loader { text-align: center; padding: 30px; }
+        .history-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            background: rgba(247,147,26,0.1);
+            border: 1px solid rgba(247,147,26,0.3);
+            color: #f7931a;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .history-btn:active { background: rgba(247,147,26,0.2); }
+        .history-box {
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            display: none;
+        }
+        .history-box.show { display: block; }
+        .row { display: flex; gap: 6px; }
+        .stat {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+        .stat-val { font-size: 14px; font-weight: bold; }
+        .stat-lbl { font-size: 8px; color: #888; }
+        .green { color: #00ff64; }
+        .red { color: #ff4444; }
+        .loader { text-align: center; padding: 20px; }
         .spinner {
             width: 30px; height: 30px;
             border: 3px solid rgba(255,255,255,0.1);
             border-top-color: #f7931a;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -70,21 +106,21 @@
 <body>
     <div class="container">
         <h2 style="text-align:center;">🐋 Bitcoin Whales</h2>
-        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Киты из последнего блока</p>
+        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Последние транзакции из блокчейна</p>
 
-        <button class="load-btn" onclick="load()" id="btn">
+        <button class="load-btn" onclick="loadWhales()" id="btn">
             🐋 ЗАГРУЗИТЬ
         </button>
 
         <div id="list">
             <div style="text-align:center; color:#555; padding:30px;">
-                Нажми кнопку
+                Нажми на кнопку
             </div>
         </div>
     </div>
 
     <script>
-        async function load() {
+        async function loadWhales() {
             const btn = document.getElementById('btn');
             const list = document.getElementById('list');
             
@@ -98,44 +134,125 @@
                 const blockRes = await fetch(`https://blockchain.info/rawblock/${latest.hash}`);
                 const block = await blockRes.json();
                 
-                const whales = block.tx.filter(tx => {
-                    const total = tx.out.reduce((s, o) => s + o.value, 0);
-                    return total >= 20000000000;
-                }).slice(0, 10);
+                const allTx = block.tx
+                    .map(tx => {
+                        const totalOut = tx.out.reduce((s, o) => s + o.value, 0);
+                        const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0);
+                        
+                        let type = 'transfer';
+                        if (totalIn > totalOut * 1.2) type = 'buy';
+                        else if (totalOut > totalIn * 1.2) type = 'sell';
+                        
+                        return {
+                            btc: totalOut / 100000000,
+                            hash: tx.hash,
+                            time: block.time,
+                            addr: tx.out[0]?.addr || tx.inputs[0]?.prev_out?.addr || 'Неизвестно',
+                            type: type
+                        };
+                    })
+                    .filter(tx => tx.btc >= 0.3)
+                    .sort((a, b) => b.btc - a.btc)
+                    .slice(0, 10);
 
                 btn.textContent = '🐋 ЗАГРУЗИТЬ';
-
-                if (!whales.length) {
-                    list.innerHTML = `<div style="text-align:center; color:#888; padding:30px;">
-                        Нет транзакций от 200 BTC в блоке #${latest.height}
-                    </div>`;
+                
+                if (!allTx.length) {
+                    list.innerHTML = '<div style="text-align:center; color:#888;">Нет транзакций</div>';
                     return;
                 }
 
-                list.innerHTML = `<div style="font-size:12px; color:#888; margin-bottom:10px;">
+                list.innerHTML = `<div style="font-size:11px; color:#888; margin-bottom:10px; text-align:center;">
                     Блок #${latest.height} | ${new Date(block.time * 1000).toLocaleString('ru-RU')}
-                </div>` + whales.map((tx, i) => {
-                    const totalSat = tx.out.reduce((s, o) => s + o.value, 0);
-                    const btc = totalSat / 100000000;
-                    const addr = tx.out[0]?.addr || 'Неизвестно';
+                </div>` + allTx.map((tx, i) => {
+                    const typeLabel = tx.type === 'buy' ? '🟢 ПОКУПКА' : 
+                                     tx.type === 'sell' ? '🔴 ПРОДАЖА' : '🔵 ПЕРЕВОД';
+                    const badgeClass = tx.type === 'buy' ? 'badge-buy' : 
+                                      tx.type === 'sell' ? 'badge-sell' : 'badge-transfer';
                     
                     return `
-                        <div class="card">
+                        <div class="card" id="card-${i}">
                             <div style="display:flex; justify-content:space-between;">
-                                <span style="font-size:11px; color:#888;">КИТ #${i + 1}</span>
-                                <span class="type-badge badge-buy">BTC</span>
+                                <span style="font-size:10px; color:#666;">#${i + 1}</span>
+                                <span class="type-badge ${badgeClass}">${typeLabel}</span>
                             </div>
-                            <div class="btc-amount">₿ ${btc.toFixed(2)} BTC</div>
-                            <div class="usd-amount">≈ $${(btc * 60000).toLocaleString()}</div>
-                            <div class="addr-box">📍 ${addr}</div>
-                            <div style="font-size:8px; color:#555; word-break:break-all;">${tx.hash}</div>
+                            <div class="btc-amount">₿ ${tx.btc.toFixed(4)} BTC</div>
+                            <div class="usd-amount">≈ $${(tx.btc * 60000).toLocaleString()}</div>
+                            <div class="time-text">🕐 ${new Date(tx.time * 1000).toLocaleString('ru-RU')}</div>
+                            <div class="addr-box">📍 ${tx.addr}</div>
+                            <div style="font-size:8px; color:#444; word-break:break-all;">${tx.hash}</div>
+                            <button class="history-btn" onclick="loadHistory('${tx.addr}', ${i})">
+                                📊 Загрузить историю кошелька
+                            </button>
+                            <div class="history-box" id="history-${i}">
+                                <div style="text-align:center; color:#888;">Нажми для загрузки</div>
+                            </div>
                         </div>
                     `;
                 }).join('');
 
             } catch (e) {
                 btn.textContent = '🐋 ЗАГРУЗИТЬ';
-                list.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка сети. Попробуй позже.</div>';
+                list.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка. Попробуй позже.</div>';
+            }
+        }
+
+        async function loadHistory(addr, index) {
+            const historyBox = document.getElementById(`history-${index}`);
+            
+            if (historyBox.classList.contains('show')) {
+                historyBox.classList.remove('show');
+                return;
+            }
+            
+            historyBox.classList.add('show');
+            historyBox.innerHTML = '<div style="text-align:center; padding:10px;"><div class="spinner"></div></div>';
+
+            try {
+                const res = await fetch(`https://blockchain.info/rawaddr/${addr}?limit=50`);
+                const data = await res.json();
+                
+                const sixMonthsAgo = Date.now() / 1000 - (180 * 24 * 60 * 60);
+                let buys = 0, sells = 0;
+                let totalBought = 0, totalSold = 0;
+                
+                data.txs.forEach(tx => {
+                    if (tx.time < sixMonthsAgo) return;
+                    const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0) / 100000000;
+                    const totalOut = tx.out.reduce((s, o) => s + o.value, 0) / 100000000;
+                    
+                    if (totalIn > totalOut) {
+                        buys++;
+                        totalBought += (totalIn - totalOut);
+                    } else if (totalOut > totalIn) {
+                        sells++;
+                        totalSold += (totalOut - totalIn);
+                    }
+                });
+                
+                historyBox.innerHTML = `
+                    <div style="font-size:11px; color:#888; margin-bottom:6px;">📊 За 6 месяцев | Баланс: ${(data.final_balance / 100000000).toFixed(2)} BTC</div>
+                    <div class="row">
+                        <div class="stat">
+                            <div class="stat-val green">${buys}</div>
+                            <div class="stat-lbl">Покупок</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-val red">${sells}</div>
+                            <div class="stat-lbl">Продаж</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-val" style="color:#f7931a;">${totalBought.toFixed(2)}</div>
+                            <div class="stat-lbl">BTC куплено</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-val" style="color:#ffd700;">${totalSold.toFixed(2)}</div>
+                            <div class="stat-lbl">BTC продано</div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                historyBox.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки истории</div>';
             }
         }
     </script>
