@@ -1,68 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Приложение</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        html, body { height:100%; font-family:Arial,sans-serif; background:#000; overflow:hidden; }
-        body {
-            background-image:url('https://avatars.mds.yandex.net/get-entity_search/2356618/969838143/orig');
-            background-size:cover; background-position:center; background-repeat:no-repeat;
-            display:flex; align-items:flex-start; justify-content:center; position:relative;
-        }
-        body::before {
-            content:''; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.65); z-index:0;
-        }
-        .app { position:relative; z-index:1; width:100%; max-width:100%; height:100vh; display:flex; flex-direction:column; }
-        .top-btn {
-            display:block; width:calc(100% - 32px); margin:20px 16px 0; padding:20px 0;
-            background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px;
-            color:#fff; font-size:20px; font-weight:bold; cursor:pointer; backdrop-filter:blur(8px);
-            text-align:center; transition:0.2s; flex-shrink:0;
-        }
-        .top-btn:active { transform:scale(0.98); background:rgba(255,255,255,0.2); }
-        .content { flex:1; overflow:hidden; padding:10px 16px 0; }
-        #mainPage { display:flex; flex-direction:column; height:100%; }
-        .coins-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding-bottom:10px; }
-        .coin-item {
-            display:flex; align-items:center; padding:10px 16px; background:rgba(255,255,255,0.05);
-            backdrop-filter:blur(4px); border-radius:12px; border:1px solid rgba(255,255,255,0.06);
-            cursor:pointer; gap:10px; transition:0.2s;
-        }
-        .coin-item:active { transform:scale(0.98); background:rgba(255,255,255,0.1); }
-        .coin-number { color:rgba(255,255,255,0.25); font-size:12px; font-weight:bold; width:20px; flex-shrink:0; }
-        .coin-icon { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; color:#fff; flex-shrink:0; }
-        .coin-icon.btc { background:#f7931a; }
-        .coin-icon.eth { background:#627eea; }
-        .coin-icon.bnb { background:#f0b90b; }
-        .coin-icon.xrp { background:#00aae4; }
-        .coin-icon.sol { background:#9945ff; }
-        .coin-icon.trx { background:#ef0027; }
-        .coin-icon.hype { background:#8b5cf6; }
-        .coin-info { flex:1; min-width:0; }
-        .coin-name { color:#fff; font-size:15px; font-weight:600; }
-        .coin-symbol { color:rgba(255,255,255,0.35); font-size:10px; text-transform:uppercase; }
-        .coin-price { color:#fff; font-size:15px; font-weight:600; white-space:nowrap; min-width:70px; text-align:right; }
-        .coin-change-24h { font-size:13px; font-weight:600; min-width:55px; text-align:right; }
-        .coin-change-24h.green { color:#4caf50; }
-        .coin-change-24h.red { color:#f44336; }
-        .loading { color:rgba(255,255,255,0.5); text-align:center; padding:30px 0; font-size:14px; }
+{ id:'ethereum', name:'Ethereum', symbol:'eth', icon:'⟠' },
+    { id:'binancecoin', name:'BNB', symbol:'bnb', icon:'B' },
+    { id:'ripple', name:'XRP', symbol:'xrp', icon:'✕' },
+    { id:'solana', name:'Solana', symbol:'sol', icon:'◎' },
+    { id:'tron', name:'TRX', symbol:'trx', icon:'T' },
+    { id:'hyperliquid', name:'Hype', symbol:'hype', icon:'◆' }
+];
 
-        #indicatorsPage {
-            display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:#0a0e27; z-index:999; padding:20px; 
-            flex-direction: column;
-            align-items: center;
-            overflow-y: auto;
+let cache = null;
+
+async function loadCoins() {
+    try {
+        if (cache) render(cache);
+        const ids = coins.map(c=>c.id).join(',');
+        const data = await fetchWithRetry(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+        cache = data; render(data);
+    } catch(e) {
+        if (!cache) {
+            $('coinsList').innerHTML = '<div class="loading">Ошибка. Повтор...</div>';
+            setTimeout(loadCoins, 3000);
         }
-        #indicatorsPage .back-btn {
-            position:absolute; top:16px; left:16px; z-index:10;
-            background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:20px;
-            padding:6px 14px; border-radius:20px; cursor:pointer;
+    }
+}
+
+function render(data) {
+    const list = $('coinsList');
+    list.innerHTML = '';
+    coins.forEach((c, i) => {
+        const info = data[c.id];
+        const item = document.createElement('div');
+        item.className = 'coin-item';
+        if (!info) {
+            item.innerHTML = <span class="coin-number">${i+1}</span><div class="coin-icon ${c.symbol}">${c.icon}</div><div class="coin-info"><div class="coin-name">${c.name}</div><div class="coin-symbol">${c.symbol.toUpperCase()}</div></div><div class="coin-price">--</div><div class="coin-change-24h" style="color:rgba(255,255,255,0.3);">--</div>;
+        } else {
+            const price = info.usd, chg = info.usd_24h_change || 0;
+            const cls = chg>=0 ? 'green' : 'red';
+            const txt = (chg>=0?'+':'')+chg.toFixed(2)+'%';
+            item.innerHTML = <span class="coin-number">${i+1}</span><div class="coin-icon ${c.symbol}">${c.icon}</div><div class="coin-info"><div class="coin-name">${c.name}</div><div class="coin-symbol">${c.symbol.toUpperCase()}</div></div><div class="coin-price">$${price.toFixed(2)}</div><div class="coin-change-24h ${cls}">${txt}</div>;
         }
-        #indicatorsPage .back-btn:active { transform:scale(0.95); opacity:0.7; }
+        item.onclick = () => openChart(c.id);
+        list.appendChild(item);
+    });
+}
+
+loadCoins();
+setInterval(loadCoins, 60000);
+
+// Обновление ETF графика каждые 30 секунд
+setInterval(drawETFChart, 30000);
+</script>
+</body>
+</html>
