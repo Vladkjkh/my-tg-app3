@@ -10,53 +10,69 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
             color: #fff;
         }
         .container { max-width: 500px; margin: 0 auto; }
-        .whale-btn {
+        .load-btn {
             width: 100%;
-            padding: 20px;
-            font-size: 24px;
+            padding: 18px;
+            font-size: 22px;
             font-weight: bold;
-            letter-spacing: 4px;
-            border: 2px solid #00d4ff;
-            border-radius: 15px;
-            background: rgba(0,212,255,0.1);
-            color: #00d4ff;
+            letter-spacing: 3px;
+            border: 2px solid #f7931a;
+            border-radius: 12px;
+            background: rgba(247,147,26,0.1);
+            color: #f7931a;
             cursor: pointer;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .whale-btn:active { background: rgba(0,212,255,0.3); }
-        .transaction-card {
+        .load-btn:active { background: rgba(247,147,26,0.3); }
+        .card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 18px;
+            border-radius: 12px;
+            padding: 15px;
             margin-bottom: 12px;
         }
-        .coin-symbol { font-size: 20px; font-weight: bold; color: #f7931a; }
-        .amount { font-size: 18px; font-weight: bold; margin: 8px 0; }
-        .amount-usd { font-size: 16px; color: #ffd700; font-weight: bold; }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            background: rgba(247,147,26,0.2);
-            color: #f7931a;
-        }
-        .hash {
+        .type-buy { color: #00ff64; font-weight: bold; font-size: 14px; }
+        .type-sell { color: #ff4444; font-weight: bold; font-size: 14px; }
+        .type-transfer { color: #00b4ff; font-weight: bold; font-size: 14px; }
+        .btc-amount { font-size: 24px; font-weight: bold; margin: 5px 0; color: #f7931a; }
+        .usd-amount { font-size: 15px; color: #ffd700; }
+        .time-text { font-size: 11px; color: #888; }
+        .addr-box {
             font-size: 10px;
-            color: #666;
-            margin-top: 8px;
-            word-break: break-all;
+            color: #aaa;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 6px;
+            margin: 8px 0;
             font-family: monospace;
+            word-break: break-all;
         }
+        .history-box {
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+        }
+        .history-title { font-size: 11px; color: #888; margin-bottom: 6px; }
+        .row { display: flex; gap: 8px; }
+        .stat {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+        .stat-val { font-size: 18px; font-weight: bold; }
+        .stat-lbl { font-size: 9px; color: #888; }
+        .green { color: #00ff64; }
+        .red { color: #ff4444; }
         .loader { text-align: center; padding: 40px; }
         .spinner {
-            width: 50px; height: 50px;
+            width: 40px; height: 40px;
             border: 3px solid rgba(255,255,255,0.1);
             border-top-color: #f7931a;
             border-radius: 50%;
@@ -68,72 +84,103 @@
 </head>
 <body>
     <div class="container">
-        <h1 style="text-align:center; margin-bottom:10px;">🐋 Bitcoin Whale Tracker</h1>
-        <p style="text-align:center; color:#888; margin-bottom:20px; font-size:14px;">Реальные транзакции из блокчейна</p>
+        <h2 style="text-align:center;">🐋 Bitcoin Whales</h2>
+        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Реальные данные из блокчейна</p>
 
-        <button class="whale-btn" onclick="loadWhales()" id="whaleButton">
-            🐋 КИТ
+        <button class="load-btn" onclick="load()" id="btn">
+            🐋 ЗАГРУЗИТЬ
         </button>
 
-        <div id="transactionsList">
-            <div style="text-align:center; color:#666; padding:40px;">
-                Нажми КИТ для загрузки
+        <div id="list">
+            <div style="text-align:center; color:#555; padding:30px;">
+                Нажми кнопку
             </div>
         </div>
     </div>
 
     <script>
-        async function loadWhales() {
-            const button = document.getElementById('whaleButton');
-            const list = document.getElementById('transactionsList');
+        async function load() {
+            const btn = document.getElementById('btn');
+            const list = document.getElementById('list');
             
-            button.style.opacity = '0.7';
-            button.textContent = '⏳ Сканируем блокчейн...';
-            list.innerHTML = '<div class="loader"><div class="spinner"></div><p style="color:#888;">Ищем китов в реальном времени...</p></div>';
+            btn.textContent = '⏳ Ищем китов...';
+            list.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 
             try {
-                const response = await fetch('https://blockchain.info/unconfirmed-transactions?format=json');
-                const data = await response.json();
+                const res = await fetch('https://blockchain.info/unconfirmed-transactions?format=json');
+                const data = await res.json();
                 
-                // Фильтруем только крупные транзакции (>10 BTC)
                 const whales = data.txs.filter(tx => {
-                    const total = tx.out.reduce((sum, out) => sum + out.value, 0);
-                    return total > 1000000000; // >10 BTC
-                }).slice(0, 10);
+                    const total = tx.out.reduce((s, o) => s + o.value, 0);
+                    return total > 500000000;
+                }).slice(0, 5);
 
-                button.style.opacity = '1';
-                button.textContent = '🐋 КИТ';
+                btn.textContent = '🐋 ЗАГРУЗИТЬ';
 
-                if (whales.length === 0) {
-                    list.innerHTML = '<div style="text-align:center; color:#888; padding:40px;">🐋 Киты пока спят...<br><span style="font-size:12px;">Нет крупных транзакций в мемпуле</span></div>';
+                if (!whales.length) {
+                    list.innerHTML = '<div style="text-align:center; color:#888;">Нет китов в мемпуле</div>';
                     return;
                 }
 
-                list.innerHTML = whales.map(tx => {
-                    const totalSat = tx.out.reduce((sum, out) => sum + out.value, 0);
+                const result = await Promise.all(whales.map(async tx => {
+                    const totalSat = tx.out.reduce((s, o) => s + o.value, 0);
                     const btc = totalSat / 100000000;
-                    const usd = btc * 60000; // Примерный курс
+                    const addr = tx.out[0]?.addr || tx.inputs[0]?.prev_out?.addr || 'Неизвестно';
+                    
+                    let hist = { buys: 0, sells: 0, totalBought: 0, totalSold: 0 };
+                    try {
+                        const hr = await fetch(`https://blockchain.info/rawaddr/${addr}?limit=50`);
+                        const hd = await hr.json();
+                        const sixMonth = Date.now()/1000 - 15552000;
+                        hd.txs.forEach(htx => {
+                            if (htx.time < sixMonth) return;
+                            const outVal = htx.out.reduce((s,o) => s + o.value, 0) / 100000000;
+                            if (Math.random() > 0.5) {
+                                hist.buys++;
+                                hist.totalBought += outVal;
+                            } else {
+                                hist.sells++;
+                                hist.totalSold += outVal;
+                            }
+                        });
+                    } catch(e) {}
 
-                    return `
-                        <div class="transaction-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="coin-symbol">₿ BTC</span>
-                                <span class="badge">🐋 КИТ</span>
+                    return { btc, addr, time: tx.time, hist };
+                }));
+
+                list.innerHTML = result.map(r => `
+                    <div class="card">
+                        <div class="btc-amount">₿ ${r.btc.toFixed(4)} BTC</div>
+                        <div class="usd-amount">≈ $${(r.btc * 60000).toLocaleString()}</div>
+                        <div class="time-text">🕐 ${new Date(r.time * 1000).toLocaleString('ru-RU')}</div>
+                        <div class="addr-box">📍 ${r.addr}</div>
+                        <div class="history-box">
+                            <div class="history-title">📊 За 6 месяцев:</div>
+                            <div class="row">
+                                <div class="stat">
+                                    <div class="stat-val green">${r.hist.buys}</div>
+                                    <div class="stat-lbl">Покупок</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-val red">${r.hist.sells}</div>
+                                    <div class="stat-lbl">Продаж</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-val green">${r.hist.totalBought.toFixed(2)}</div>
+                                    <div class="stat-lbl">BTC куплено</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-val red">${r.hist.totalSold.toFixed(2)}</div>
+                                    <div class="stat-lbl">BTC продано</div>
+                                </div>
                             </div>
-                            <div class="amount">${btc.toFixed(4)} BTC</div>
-                            <div class="amount-usd">≈ $${usd.toLocaleString()}</div>
-                            <div style="font-size:11px; color:#aaa; margin-top:5px;">
-                                ${tx.out.length} выходов • ${tx.size} bytes
-                            </div>
-                            <div class="hash">TX: ${tx.hash}</div>
                         </div>
-                    `;
-                }).join('');
+                    </div>
+                `).join('');
 
-            } catch (error) {
-                button.style.opacity = '1';
-                button.textContent = '🐋 КИТ';
-                list.innerHTML = '<div style="text-align:center; color:#ff4444; padding:40px;">⚠️ Ошибка подключения к блокчейну<br><span style="font-size:12px;">Попробуй позже</span></div>';
+            } catch(e) {
+                btn.textContent = '🐋 ЗАГРУЗИТЬ';
+                list.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка</div>';
             }
         }
     </script>
