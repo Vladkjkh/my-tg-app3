@@ -1,33 +1,68 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>КИТ</title>
+    <title>Приложение</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { height:100%; font-family:Arial,sans-serif; background:#000; overflow:hidden; }
         body {
-            margin: 0;
-            padding: 0;
-            background: #0088cc;
-            height: 100vh;
-            display: flex;
+            background-image:url('https://avatars.mds.yandex.net/get-entity_search/2356618/969838143/orig');
+            background-size:cover; background-position:center; background-repeat:no-repeat;
+            display:flex; align-items:flex-start; justify-content:center; position:relative;
+        }
+        body::before {
+            content:''; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.65); z-index:0;
+        }
+        .app { position:relative; z-index:1; width:100%; max-width:100%; height:100vh; display:flex; flex-direction:column; }
+        .top-btn {
+            display:block; width:calc(100% - 32px); margin:20px 16px 0; padding:20px 0;
+            background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px;
+            color:#fff; font-size:20px; font-weight:bold; cursor:pointer; backdrop-filter:blur(8px);
+            text-align:center; transition:0.2s; flex-shrink:0;
+        }
+        .top-btn:active { transform:scale(0.98); background:rgba(255,255,255,0.2); }
+        .content { flex:1; overflow:hidden; padding:10px 16px 0; }
+        #mainPage { display:flex; flex-direction:column; height:100%; }
+        .coins-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding-bottom:10px; }
+        .coin-item {
+            display:flex; align-items:center; padding:10px 16px; background:rgba(255,255,255,0.05);
+            backdrop-filter:blur(4px); border-radius:12px; border:1px solid rgba(255,255,255,0.06);
+            cursor:pointer; gap:10px; transition:0.2s;
+        }
+        .coin-item:active { transform:scale(0.98); background:rgba(255,255,255,0.1); }
+        .coin-number { color:rgba(255,255,255,0.25); font-size:12px; font-weight:bold; width:20px; flex-shrink:0; }
+        .coin-icon { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; color:#fff; flex-shrink:0; }
+        .coin-icon.btc { background:#f7931a; }
+        .coin-icon.eth { background:#627eea; }
+        .coin-icon.bnb { background:#f0b90b; }
+        .coin-icon.xrp { background:#00aae4; }
+        .coin-icon.sol { background:#9945ff; }
+        .coin-icon.trx { background:#ef0027; }
+        .coin-icon.hype { background:#8b5cf6; }
+        .coin-info { flex:1; min-width:0; }
+        .coin-name { color:#fff; font-size:15px; font-weight:600; }
+        .coin-symbol { color:rgba(255,255,255,0.35); font-size:10px; text-transform:uppercase; }
+        .coin-price { color:#fff; font-size:15px; font-weight:600; white-space:nowrap; min-width:70px; text-align:right; }
+        .coin-change-24h { font-size:13px; font-weight:600; min-width:55px; text-align:right; }
+        .coin-change-24h.green { color:#4caf50; }
+        .coin-change-24h.red { color:#f44336; }
+        .loading { color:rgba(255,255,255,0.5); text-align:center; padding:30px 0; font-size:14px; }
+
+        #indicatorsPage {
+            display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:#0a0e27; z-index:999; padding:20px; 
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            overflow-y: auto;
         }
-        
-        .btn {
-            padding: 30px 60px;
-            font-size: 48px;
-            font-weight: bold;
-            background: white;
-            color: #0088cc;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
+        #indicatorsPage .back-btn {
+            position:absolute; top:16px; left:16px; z-index:10;
+            background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:20px;
+            padding:6px 14px; border-radius:20px; cursor:pointer;
         }
-    </style>
-</head>
-<body>
-    <button class="btn" onclick="alert('123')">123</button>
-</body>
-</html>
+        #indicatorsPage .back-btn:active { transform:scale(0.95); opacity:0.7; }
