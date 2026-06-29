@@ -43,7 +43,6 @@
         }
         .badge-buy { background: rgba(0,255,100,0.15); color: #00ff64; }
         .badge-sell { background: rgba(255,68,68,0.15); color: #ff4444; }
-        .badge-transfer { background: rgba(0,180,255,0.15); color: #00b4ff; }
         .btc-amount { font-size: 26px; font-weight: bold; color: #f7931a; margin-top: 8px; }
         .usd-amount { font-size: 16px; color: #ffd700; }
         .addr-box {
@@ -56,24 +55,6 @@
             font-family: monospace;
             word-break: break-all;
         }
-        .history-box {
-            background: rgba(0,0,0,0.5);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 8px;
-        }
-        .row { display: flex; gap: 6px; }
-        .stat {
-            flex: 1;
-            background: rgba(255,255,255,0.03);
-            border-radius: 6px;
-            padding: 8px;
-            text-align: center;
-        }
-        .stat-val { font-size: 14px; font-weight: bold; }
-        .stat-lbl { font-size: 8px; color: #888; }
-        .green { color: #00ff64; }
-        .red { color: #ff4444; }
         .loader { text-align: center; padding: 30px; }
         .spinner {
             width: 30px; height: 30px;
@@ -89,10 +70,10 @@
 <body>
     <div class="container">
         <h2 style="text-align:center;">🐋 Bitcoin Whales</h2>
-        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Транзакции от 200 BTC из последних блоков</p>
+        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Киты из последнего блока</p>
 
         <button class="load-btn" onclick="load()" id="btn">
-            🐋 ЗАГРУЗИТЬ КИТОВ
+            🐋 ЗАГРУЗИТЬ
         </button>
 
         <div id="list">
@@ -107,77 +88,54 @@
             const btn = document.getElementById('btn');
             const list = document.getElementById('list');
             
-            btn.textContent = '⏳ Загружаем...';
+            btn.textContent = '⏳ Загрузка...';
             list.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 
             try {
-                // Получаем последний блок
-                const latestRes = await fetch('https://blockchain.info/latestblock');
-                const latest = await latestRes.json();
+                const res = await fetch('https://blockchain.info/latestblock');
+                const latest = await res.json();
                 
-                // Получаем содержимое блока
                 const blockRes = await fetch(`https://blockchain.info/rawblock/${latest.hash}`);
                 const block = await blockRes.json();
                 
-                // Фильтруем транзакции от 200 BTC
                 const whales = block.tx.filter(tx => {
                     const total = tx.out.reduce((s, o) => s + o.value, 0);
                     return total >= 20000000000;
                 }).slice(0, 10);
 
-                btn.textContent = '🐋 ЗАГРУЗИТЬ КИТОВ';
+                btn.textContent = '🐋 ЗАГРУЗИТЬ';
 
                 if (!whales.length) {
                     list.innerHTML = `<div style="text-align:center; color:#888; padding:30px;">
-                        🐋 В блоке #${latest.height} нет транзакций от 200 BTC<br>
-                        <span style="font-size:11px;">Блок: ${new Date(block.time * 1000).toLocaleString('ru-RU')}</span>
+                        Нет транзакций от 200 BTC в блоке #${latest.height}
                     </div>`;
                     return;
                 }
 
-                list.innerHTML = whales.map((tx, i) => {
+                list.innerHTML = `<div style="font-size:12px; color:#888; margin-bottom:10px;">
+                    Блок #${latest.height} | ${new Date(block.time * 1000).toLocaleString('ru-RU')}
+                </div>` + whales.map((tx, i) => {
                     const totalSat = tx.out.reduce((s, o) => s + o.value, 0);
                     const btc = totalSat / 100000000;
-                    const addr = tx.out.find(o => o.addr)?.addr || 'Неизвестно';
-                    const hash = tx.hash;
-                    
-                    const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0);
-                    const totalOut = tx.out.reduce((s, o) => s + o.value, 0);
-                    
-                    let type = 'transfer';
-                    let typeLabel = '🔵 ПЕРЕВОД';
-                    let badgeClass = 'badge-transfer';
-                    
-                    if (totalIn > totalOut * 1.1) {
-                        type = 'buy';
-                        typeLabel = '🟢 ПОКУПКА';
-                        badgeClass = 'badge-buy';
-                    } else if (totalOut > totalIn * 1.1) {
-                        type = 'sell';
-                        typeLabel = '🔴 ПРОДАЖА';
-                        badgeClass = 'badge-sell';
-                    }
+                    const addr = tx.out[0]?.addr || 'Неизвестно';
                     
                     return `
                         <div class="card">
                             <div style="display:flex; justify-content:space-between;">
-                                <span style="font-size:11px; color:#666;">Блок #${latest.height}</span>
-                                <span class="type-badge ${badgeClass}">${typeLabel}</span>
+                                <span style="font-size:11px; color:#888;">КИТ #${i + 1}</span>
+                                <span class="type-badge badge-buy">BTC</span>
                             </div>
                             <div class="btc-amount">₿ ${btc.toFixed(2)} BTC</div>
                             <div class="usd-amount">≈ $${(btc * 60000).toLocaleString()}</div>
-                            <div style="font-size:10px; color:#888;">
-                                🕐 ${new Date(block.time * 1000).toLocaleString('ru-RU')}
-                            </div>
                             <div class="addr-box">📍 ${addr}</div>
-                            <div style="font-size:9px; color:#555; word-break:break-all;">TX: ${hash}</div>
+                            <div style="font-size:8px; color:#555; word-break:break-all;">${tx.hash}</div>
                         </div>
                     `;
                 }).join('');
 
             } catch (e) {
-                btn.textContent = '🐋 ЗАГРУЗИТЬ КИТОВ';
-                list.innerHTML = '<div style="text-align:center; color:#ff4444;">⚠️ Ошибка. Попробуй позже.</div>';
+                btn.textContent = '🐋 ЗАГРУЗИТЬ';
+                list.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка сети. Попробуй позже.</div>';
             }
         }
     </script>
