@@ -3,31 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐋 КИТ</title>
+    <title>Блокчейн</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
             min-height: 100vh;
-            padding: 15px;
+            padding: 20px;
             color: #fff;
         }
         .container { max-width: 500px; margin: 0 auto; }
-        .load-btn {
-            width: 100%;
+        h2 { text-align: center; margin-bottom: 20px; }
+        .buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .chain-btn {
+            flex: 1;
             padding: 18px;
-            font-size: 22px;
+            font-size: 16px;
             font-weight: bold;
-            letter-spacing: 3px;
-            border: 2px solid #f7931a;
+            border: none;
             border-radius: 12px;
-            background: rgba(247,147,26,0.15);
-            color: #f7931a;
             cursor: pointer;
-            margin-bottom: 15px;
+            color: #fff;
         }
-        .load-btn:active { background: rgba(247,147,26,0.3); }
+        .btc-btn { background: #f7931a; }
+        .eth-btn { background: #627eea; }
+        .chain-btn:active { opacity: 0.7; }
         .block-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -39,142 +40,112 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 8px;
         }
-        .block-height { font-size: 20px; font-weight: bold; color: #f7931a; }
+        .block-num { font-size: 18px; font-weight: bold; }
         .block-time { font-size: 11px; color: #888; }
+        .block-info { font-size: 11px; color: #aaa; margin-bottom: 8px; }
         .tx-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px solid rgba(255,255,255,0.03);
-            font-size: 12px;
+            font-size: 11px;
         }
-        .tx-amount { color: #f7931a; font-weight: bold; }
-        .tx-hash {
-            font-size: 9px;
-            color: #666;
-            font-family: monospace;
-            word-break: break-all;
-            flex: 1;
-            margin: 0 8px;
-        }
-        .tx-type {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        .type-in { background: rgba(0,255,100,0.1); color: #00ff64; }
-        .type-out { background: rgba(255,68,68,0.1); color: #ff4444; }
-        .loader { text-align: center; padding: 20px; }
+        .tx-hash { color: #888; font-family: monospace; font-size: 10px; flex: 1; margin: 0 8px; }
+        .tx-value { font-weight: bold; white-space: nowrap; }
+        .loader { text-align: center; padding: 30px; }
         .spinner {
             width: 30px; height: 30px;
             border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #f7931a;
+            border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 10px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .info-bar {
-            text-align: center;
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 style="text-align:center;">₿ Bitcoin Blockchain</h2>
-        <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">Последние блоки в реальном времени</p>
+        <h2>🔗 Блокчейн</h2>
+        
+        <div class="buttons">
+            <button class="chain-btn btc-btn" onclick="loadBTC()">₿ Bitcoin</button>
+            <button class="chain-btn eth-btn" onclick="loadETH()">Ξ Ethereum</button>
+        </div>
 
-        <button class="load-btn" onclick="loadBlockchain()" id="btn">
-            🐋 ЗАГРУЗИТЬ
-        </button>
-
-        <div id="list">
-            <div style="text-align:center; color:#555; padding:30px;">
-                Нажми на кнопку
+        <div id="content">
+            <div style="text-align:center; color:#555; padding:40px;">
+                Выбери блокчейн
             </div>
         </div>
     </div>
 
     <script>
-        async function loadBlockchain() {
-            const btn = document.getElementById('btn');
-            const list = document.getElementById('list');
-            
-            btn.textContent = '⏳ Загрузка блокчейна...';
-            list.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+        async function loadBTC() {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Bitcoin...</p></div>';
 
             try {
-                // Получаем последние 10 блоков
-                const blocksRes = await fetch('https://blockchain.info/blocks?format=json');
-                const blocksData = await blocksRes.json();
-                const blocks = blocksData.blocks.slice(0, 10);
+                const res = await fetch('https://blockchain.info/blocks?format=json');
+                const data = await res.json();
+                const blocks = data.blocks.slice(0, 5);
 
-                btn.textContent = '🐋 ЗАГРУЗИТЬ';
-                list.innerHTML = '<div class="info-bar">Загружено 10 последних блоков</div>';
-
-                // Загружаем каждый блок
                 for (const block of blocks) {
-                    try {
-                        const blockRes = await fetch(`https://blockchain.info/rawblock/${block.hash}`);
-                        const blockData = await blockRes.json();
-                        
-                        const blockCard = document.createElement('div');
-                        blockCard.className = 'block-card';
-                        
-                        const totalBTC = blockData.tx.reduce((sum, tx) => {
-                            return sum + tx.out.reduce((s, o) => s + o.value, 0);
-                        }, 0) / 100000000;
-                        
-                        blockCard.innerHTML = `
-                            <div class="block-header">
-                                <div>
-                                    <div class="block-height">Блок #${blockData.height}</div>
-                                    <div class="block-time">${new Date(blockData.time * 1000).toLocaleString('ru-RU')}</div>
-                                </div>
-                                <div style="text-align:right;">
-                                    <div style="font-size:11px; color:#888;">Транзакций: ${blockData.tx.length}</div>
-                                    <div style="font-size:11px; color:#f7931a;">Объём: ${totalBTC.toFixed(2)} BTC</div>
-                                </div>
-                            </div>
-                            <div class="tx-list">
-                                ${blockData.tx.slice(0, 5).map(tx => {
-                                    const totalOut = tx.out.reduce((s, o) => s + o.value, 0) / 100000000;
-                                    const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0) / 100000000;
-                                    const type = totalIn > totalOut ? 'ВХОД' : 'ВЫХОД';
-                                    const typeClass = totalIn > totalOut ? 'type-in' : 'type-out';
-                                    
-                                    return `
-                                        <div class="tx-row">
-                                            <span class="tx-type ${typeClass}">${type}</span>
-                                            <span class="tx-hash">${tx.hash.substring(0, 20)}...</span>
-                                            <span class="tx-amount">${totalOut.toFixed(4)} BTC</span>
-                                        </div>
-                                    `;
-                                }).join('')}
-                                ${blockData.tx.length > 5 ? `<div style="font-size:10px; color:#555; text-align:center; padding:5px;">+ ещё ${blockData.tx.length - 5} транзакций</div>` : ''}
-                            </div>
-                        `;
-                        
-                        list.appendChild(blockCard);
-                        
-                    } catch (e) {
-                        console.log('Ошибка загрузки блока:', e);
-                    }
+                    const blockRes = await fetch(`https://blockchain.info/rawblock/${block.hash}`);
+                    const bd = await blockRes.json();
+                    
+                    const card = document.createElement('div');
+                    card.className = 'block-card';
+                    card.innerHTML = `
+                        <div class="block-header">
+                            <span class="block-num" style="color:#f7931a;">Блок #${bd.height}</span>
+                            <span class="block-time">${new Date(bd.time * 1000).toLocaleString('ru-RU')}</span>
+                        </div>
+                        <div class="block-info">Транзакций: ${bd.tx.length} | Размер: ${(bd.size / 1000).toFixed(1)} KB</div>
+                        ${bd.tx.slice(0, 5).map(tx => {
+                            const val = tx.out.reduce((s, o) => s + o.value, 0) / 100000000;
+                            return `<div class="tx-row">
+                                <span style="color:#f7931a;">₿</span>
+                                <span class="tx-hash">${tx.hash.substring(0, 16)}...</span>
+                                <span class="tx-value" style="color:#f7931a;">${val.toFixed(4)} BTC</span>
+                            </div>`;
+                        }).join('')}
+                        ${bd.tx.length > 5 ? `<div style="font-size:10px; color:#555; text-align:center;">+ ещё ${bd.tx.length - 5} транзакций</div>` : ''}
+                    `;
+                    content.appendChild(card);
                 }
-
             } catch (e) {
-                btn.textContent = '🐋 ЗАГРУЗИТЬ';
-                list.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки</div>';
+                content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Bitcoin</div>';
+            }
+        }
+
+        async function loadETH() {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Ethereum...</p></div>';
+
+            try {
+                const res = await fetch('https://api.blockchair.com/ethereum/blocks?limit=5');
+                const data = await res.json();
+                const blocks = data.data;
+
+                for (const block of Object.values(blocks)) {
+                    const card = document.createElement('div');
+                    card.className = 'block-card';
+                    card.innerHTML = `
+                        <div class="block-header">
+                            <span class="block-num" style="color:#627eea;">Блок #${block.id}</span>
+                            <span class="block-time">${new Date(block.time).toLocaleString('ru-RU')}</span>
+                        </div>
+                        <div class="block-info">Транзакций: ${block.transaction_count} | Газ: ${block.gas_used}</div>
+                        <div style="font-size:10px; color:#666; margin-bottom:8px;">Майнер: ${block.miner.substring(0, 20)}...</div>
+                        <div style="font-size:10px; color:#666;">Хеш: ${block.hash.substring(0, 30)}...</div>
+                    `;
+                    content.appendChild(card);
+                }
+            } catch (e) {
+                content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Ethereum</div>';
             }
         }
     </script>
