@@ -10,38 +10,56 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
             min-height: 100vh;
-            padding: 20px;
             color: #fff;
         }
-        .container { max-width: 500px; margin: 0 auto; }
-        h2 { text-align: center; margin-bottom: 20px; }
-        .buttons { display: flex; gap: 10px; margin-bottom: 20px; }
-        .chain-btn {
+        .tabs {
+            display: flex;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .tab {
             flex: 1;
-            padding: 18px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            color: #fff;
-            text-decoration: none;
+            padding: 15px;
             text-align: center;
-            display: block;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            color: #888;
+            background: #111;
+            font-size: 14px;
         }
-        .btc-btn { background: #f7931a; }
-        .eth-btn { background: #627eea; }
+        .tab.active { color: #fff; border-bottom: 2px solid #f7931a; }
+        .tab.eth-active { color: #fff; border-bottom: 2px solid #627eea; }
+        iframe {
+            width: 100%;
+            height: calc(100vh - 50px);
+            border: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🔗 Блокчейн</h2>
-        <p style="text-align:center; color:#888; margin-bottom:20px;">Откроется в браузере</p>
-        
-        <div class="buttons">
-            <a href="https://www.blockchain.com/explorer" target="_blank" class="chain-btn btc-btn">₿ Bitcoin</a>
-            <a href="https://etherscan.io" target="_blank" class="chain-btn eth-btn">Ξ Ethereum</a>
-        </div>
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('btc', this)">₿ Bitcoin</button>
+        <button class="tab" onclick="switchTab('eth', this)">Ξ Ethereum</button>
     </div>
+    
+    <iframe id="blockchainFrame" src="https://www.blockchain.com/explorer" allow="clipboard-write"></iframe>
+
+    <script>
+        function switchTab(chain, btn) {
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.remove('active', 'eth-active');
+            });
+            
+            if (chain === 'btc') {
+                btn.classList.add('active');
+                document.getElementById('blockchainFrame').src = 'https://www.blockchain.com/explorer';
+            } else {
+                btn.classList.add('eth-active');
+                document.getElementById('blockchainFrame').src = 'https://etherscan.io';
+            }
+        }
+    </script>
 </body>
 </html>
