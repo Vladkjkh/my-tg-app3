@@ -25,163 +25,23 @@
             border-radius: 12px;
             cursor: pointer;
             color: #fff;
+            text-decoration: none;
+            text-align: center;
+            display: block;
         }
         .btc-btn { background: #f7931a; }
         .eth-btn { background: #627eea; }
-        .chain-btn:active { opacity: 0.7; }
-        .tx-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        .tx-hash {
-            font-size: 10px;
-            color: #f7931a;
-            font-family: monospace;
-            word-break: break-all;
-            margin-bottom: 8px;
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 8px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px;
-            margin-bottom: 4px;
-            font-size: 10px;
-        }
-        .addr { color: #aaa; font-family: monospace; font-size: 9px; }
-        .amount { font-weight: bold; font-size: 11px; }
-        .in { color: #00ff64; }
-        .out { color: #ff4444; }
-        .label { color: #888; font-size: 9px; margin-bottom: 4px; }
-        .fee { font-size: 9px; color: #888; text-align: right; margin-top: 6px; }
-        .loader { text-align: center; padding: 30px; }
-        .spinner {
-            width: 30px; height: 30px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 10px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>🔗 Блокчейн</h2>
+        <p style="text-align:center; color:#888; margin-bottom:20px;">Откроется в браузере</p>
         
         <div class="buttons">
-            <button class="chain-btn btc-btn" onclick="loadBTC()">₿ Bitcoin</button>
-            <button class="chain-btn eth-btn" onclick="loadETH()">Ξ Ethereum</button>
-        </div>
-
-        <div id="content">
-            <div style="text-align:center; color:#555; padding:40px;">
-                Выбери блокчейн
-            </div>
+            <a href="https://www.blockchain.com/explorer" target="_blank" class="chain-btn btc-btn">₿ Bitcoin</a>
+            <a href="https://etherscan.io" target="_blank" class="chain-btn eth-btn">Ξ Ethereum</a>
         </div>
     </div>
-
-    <script>
-        async function loadBTC() {
-            const content = document.getElementById('content');
-            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Bitcoin...</p></div>';
-
-            try {
-                // Берём последний блок
-                const latestRes = await fetch('https://blockchain.info/latestblock');
-                const latest = await latestRes.json();
-                
-                const blockRes = await fetch(`https://blockchain.info/rawblock/${latest.hash}`);
-                const block = await blockRes.json();
-                
-                content.innerHTML = `<div style="text-align:center; font-size:11px; color:#888; margin-bottom:10px;">
-                    Блок #${block.height} | ${new Date(block.time * 1000).toLocaleString('ru-RU')} | ${block.tx.length} транзакций
-                </div>`;
-
-                // Показываем первые 10 транзакций
-                for (const tx of block.tx.slice(0, 10)) {
-                    const totalOut = tx.out.reduce((s, o) => s + o.value, 0) / 100000000;
-                    const totalIn = tx.inputs.reduce((s, inp) => s + (inp.prev_out?.value || 0), 0) / 100000000;
-                    const fee = totalIn - totalOut;
-
-                    const card = document.createElement('div');
-                    card.className = 'tx-card';
-                    card.innerHTML = `
-                        <div class="tx-hash">${tx.hash}</div>
-                        
-                        <div class="label">📤 ОТПРАВИТЕЛИ:</div>
-                        ${tx.inputs.slice(0, 3).map(inp => `
-                            <div class="row">
-                                <span class="addr">${inp.prev_out?.addr || 'Coinbase'}</span>
-                                <span class="amount out">-${((inp.prev_out?.value || 0) / 100000000).toFixed(4)} BTC</span>
-                            </div>
-                        `).join('')}
-                        
-                        <div class="label" style="margin-top:6px;">📥 ПОЛУЧАТЕЛИ:</div>
-                        ${tx.out.slice(0, 3).map(out => `
-                            <div class="row">
-                                <span class="addr">${out.addr || 'Неизвестно'}</span>
-                                <span class="amount in">+${(out.value / 100000000).toFixed(4)} BTC</span>
-                            </div>
-                        `).join('')}
-                        
-                        <div class="fee">Комиссия: ${fee.toFixed(6)} BTC</div>
-                    `;
-                    content.appendChild(card);
-                }
-
-            } catch (e) {
-                content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Bitcoin</div>';
-            }
-        }
-
-        async function loadETH() {
-            const content = document.getElementById('content');
-            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Ethereum...</p></div>';
-
-            try {
-                const res = await fetch('https://api.blockchair.com/ethereum/blocks?limit=3');
-                const data = await res.json();
-                const blocks = Object.values(data.data);
-
-                content.innerHTML = '';
-
-                for (const block of blocks) {
-                    const txRes = await fetch(`https://api.blockchair.com/ethereum/transactions?q=block_id(${block.id})&limit=5`);
-                    const txData = await txRes.json();
-                    const txs = Object.values(txData.data);
-
-                    content.innerHTML += `<div style="background:rgba(98,126,234,0.1); padding:10px; border-radius:10px; margin-bottom:8px;">
-                        <span style="font-weight:bold; color:#627eea;">Блок #${block.id}</span>
-                        <span style="font-size:10px; color:#888; margin-left:10px;">${block.transaction_count} транзакций</span>
-                    </div>`;
-
-                    for (const tx of txs) {
-                        const card = document.createElement('div');
-                        card.className = 'tx-card';
-                        card.innerHTML = `
-                            <div class="tx-hash" style="color:#627eea;">${tx.hash.substring(0, 40)}...</div>
-                            <div class="row">
-                                <span class="addr">От: ${tx.from.substring(0, 20)}...</span>
-                            </div>
-                            <div class="row">
-                                <span class="addr">Кому: ${(tx.to || 'Контракт').substring(0, 20)}...</span>
-                                <span class="amount in">${(tx.value / 1e18).toFixed(4)} ETH</span>
-                            </div>
-                            <div class="fee">Газ: ${tx.gas_used} | ${(tx.gas_price / 1e9).toFixed(0)} Gwei</div>
-                        `;
-                        content.appendChild(card);
-                    }
-                }
-            } catch (e) {
-                content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Ethereum</div>';
-            }
-        }
-    </script>
 </body>
 </html>
