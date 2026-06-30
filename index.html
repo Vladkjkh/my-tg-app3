@@ -29,31 +29,54 @@
         .btc-btn { background: #f7931a; }
         .eth-btn { background: #627eea; }
         .chain-btn:active { opacity: 0.7; }
-        .block-card {
+        .tx-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 10px;
         }
-        .block-header {
+        .tx-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
-        .block-num { font-size: 18px; font-weight: bold; }
-        .block-time { font-size: 11px; color: #888; }
-        .block-info { font-size: 11px; color: #aaa; margin-bottom: 8px; }
-        .tx-row {
+        .tx-hash-text {
+            font-size: 10px;
+            color: #f7931a;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .tx-time { font-size: 11px; color: #888; }
+        .tx-detail {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        .tx-label { font-size: 10px; color: #888; }
+        .tx-address {
+            font-size: 9px;
+            color: #aaa;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .tx-amount {
+            font-size: 13px;
+            font-weight: bold;
+            text-align: right;
+        }
+        .in-amount { color: #00ff64; }
+        .out-amount { color: #ff4444; }
+        .fee { font-size: 10px; color: #888; text-align: right; margin-top: 8px; }
+        .block-info-text {
+            text-align: center;
             font-size: 11px;
+            color: #888;
+            margin-bottom: 10px;
         }
-        .tx-hash { color: #888; font-family: monospace; font-size: 10px; flex: 1; margin: 0 8px; }
-        .tx-value { font-weight: bold; white-space: nowrap; }
         .loader { text-align: center; padding: 30px; }
         .spinner {
             width: 30px; height: 30px;
@@ -85,36 +108,68 @@
     <script>
         async function loadBTC() {
             const content = document.getElementById('content');
-            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Bitcoin...</p></div>';
+            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Bitcoin блокчейна...</p></div>';
 
             try {
-                const res = await fetch('https://blockchain.info/blocks?format=json');
-                const data = await res.json();
-                const blocks = data.blocks.slice(0, 5);
+                // Получаем последние транзакции через mempool.space API
+                const res = await fetch('https://mempool.space/api/recent');
+                const txs = await res.json();
+                
+                content.innerHTML = '<div class="block-info-text">Последние транзакции Bitcoin</div>';
 
-                for (const block of blocks) {
-                    const blockRes = await fetch(`https://blockchain.info/rawblock/${block.hash}`);
-                    const bd = await blockRes.json();
-                    
-                    const card = document.createElement('div');
-                    card.className = 'block-card';
-                    card.innerHTML = `
-                        <div class="block-header">
-                            <span class="block-num" style="color:#f7931a;">Блок #${bd.height}</span>
-                            <span class="block-time">${new Date(bd.time * 1000).toLocaleString('ru-RU')}</span>
-                        </div>
-                        <div class="block-info">Транзакций: ${bd.tx.length} | Размер: ${(bd.size / 1000).toFixed(1)} KB</div>
-                        ${bd.tx.slice(0, 5).map(tx => {
-                            const val = tx.out.reduce((s, o) => s + o.value, 0) / 100000000;
-                            return `<div class="tx-row">
-                                <span style="color:#f7931a;">₿</span>
-                                <span class="tx-hash">${tx.hash.substring(0, 16)}...</span>
-                                <span class="tx-value" style="color:#f7931a;">${val.toFixed(4)} BTC</span>
-                            </div>`;
-                        }).join('')}
-                        ${bd.tx.length > 5 ? `<div style="font-size:10px; color:#555; text-align:center;">+ ещё ${bd.tx.length - 5} транзакций</div>` : ''}
-                    `;
-                    content.appendChild(card);
+                for (const tx of txs.slice(0, 10)) {
+                    try {
+                        const txRes = await fetch(`https://mempool.space/api/tx/${tx.txid}`);
+                        const txData = await txRes.json();
+                        
+                        const totalIn = txData.vin.reduce((s, vin) => s + (vin.prevout?.value || 0), 0);
+                        const totalOut = txData.vout.reduce((s, vout) => s + (vout.value || 0), 0);
+                        const fee = totalIn - totalOut;
+
+                        const card = document.createElement('div');
+                        card.className = 'tx-card';
+                        card.innerHTML = `
+                            <div class="tx-header">
+                                <div class="tx-hash-text">${txData.txid.substring(0, 30)}...</div>
+                                <div class="tx-time">${txData.status.confirmed ? '✅ Подтверждена' : '⏳ Мемпул'}</div>
+                            </div>
+                            
+                            <div style="font-size:10px; color:#888; margin-bottom:8px;">
+                                ${txData.status.confirmed ? 'Блок: ' + txData.status.block_height : 'Ожидает подтверждения'}
+                            </div>
+
+                            <div style="margin-bottom:6px;">
+                                <div class="tx-label">📤 ОТПРАВИТЕЛИ (Входы):</div>
+                                ${txData.vin.slice(0, 3).map(vin => `
+                                    <div class="tx-detail">
+                                        <div>
+                                            <div class="tx-address">${vin.prevout?.scriptpubkey_address || 'Coinbase'}</div>
+                                        </div>
+                                        <div class="tx-amount out-amount">-${(vin.prevout?.value / 100000000 || 0).toFixed(4)} BTC</div>
+                                    </div>
+                                `).join('')}
+                                ${txData.vin.length > 3 ? `<div style="font-size:9px; color:#555;">+ ещё ${txData.vin.length - 3} входов</div>` : ''}
+                            </div>
+
+                            <div>
+                                <div class="tx-label">📥 ПОЛУЧАТЕЛИ (Выходы):</div>
+                                ${txData.vout.slice(0, 3).map(vout => `
+                                    <div class="tx-detail">
+                                        <div>
+                                            <div class="tx-address">${vout.scriptpubkey_address || 'OP_RETURN'}</div>
+                                        </div>
+                                        <div class="tx-amount in-amount">+${(vout.value / 100000000).toFixed(4)} BTC</div>
+                                    </div>
+                                `).join('')}
+                                ${txData.vout.length > 3 ? `<div style="font-size:9px; color:#555;">+ ещё ${txData.vout.length - 3} выходов</div>` : ''}
+                            </div>
+
+                            <div class="fee">Комиссия: ${(fee / 100000000).toFixed(6)} BTC</div>
+                        `;
+                        content.appendChild(card);
+                    } catch (e) {
+                        console.log('Ошибка загрузки транзакции:', e);
+                    }
                 }
             } catch (e) {
                 content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Bitcoin</div>';
@@ -123,26 +178,56 @@
 
         async function loadETH() {
             const content = document.getElementById('content');
-            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Ethereum...</p></div>';
+            content.innerHTML = '<div class="loader"><div class="spinner"></div><p>Загрузка Ethereum блокчейна...</p></div>';
 
             try {
-                const res = await fetch('https://api.blockchair.com/ethereum/blocks?limit=5');
+                const res = await fetch('https://api.blockchair.com/ethereum/blocks?limit=3');
                 const data = await res.json();
-                const blocks = data.data;
+                const blocks = Object.values(data.data);
 
-                for (const block of Object.values(blocks)) {
-                    const card = document.createElement('div');
-                    card.className = 'block-card';
-                    card.innerHTML = `
-                        <div class="block-header">
-                            <span class="block-num" style="color:#627eea;">Блок #${block.id}</span>
-                            <span class="block-time">${new Date(block.time).toLocaleString('ru-RU')}</span>
+                content.innerHTML = '<div class="block-info-text">Последние блоки Ethereum</div>';
+
+                for (const block of blocks) {
+                    const txRes = await fetch(`https://api.blockchair.com/ethereum/transactions?q=block_id(${block.id})&limit=5`);
+                    const txData = await txRes.json();
+                    const txs = Object.values(txData.data);
+
+                    const blockCard = document.createElement('div');
+                    blockCard.style.cssText = 'margin-bottom:15px;';
+                    blockCard.innerHTML = `
+                        <div style="background:rgba(98,126,234,0.1); padding:10px; border-radius:10px; margin-bottom:8px;">
+                            <div style="font-weight:bold; color:#627eea;">Блок #${block.id}</div>
+                            <div style="font-size:10px; color:#888;">${new Date(block.time).toLocaleString('ru-RU')} | ${block.transaction_count} транзакций</div>
                         </div>
-                        <div class="block-info">Транзакций: ${block.transaction_count} | Газ: ${block.gas_used}</div>
-                        <div style="font-size:10px; color:#666; margin-bottom:8px;">Майнер: ${block.miner.substring(0, 20)}...</div>
-                        <div style="font-size:10px; color:#666;">Хеш: ${block.hash.substring(0, 30)}...</div>
                     `;
-                    content.appendChild(card);
+                    content.appendChild(blockCard);
+
+                    for (const tx of txs) {
+                        const card = document.createElement('div');
+                        card.className = 'tx-card';
+                        card.innerHTML = `
+                            <div class="tx-header">
+                                <div class="tx-hash-text" style="color:#627eea;">${tx.hash.substring(0, 30)}...</div>
+                                <div style="font-size:10px; color:#888;">${new Date(tx.time).toLocaleTimeString('ru-RU')}</div>
+                            </div>
+
+                            <div class="tx-detail">
+                                <div>
+                                    <div class="tx-label">📤 От:</div>
+                                    <div class="tx-address">${tx.from.substring(0, 20)}...</div>
+                                </div>
+                            </div>
+                            <div class="tx-detail">
+                                <div>
+                                    <div class="tx-label">📥 Кому:</div>
+                                    <div class="tx-address">${tx.to ? tx.to.substring(0, 20) + '...' : 'Контракт'}</div>
+                                </div>
+                                <div class="tx-amount in-amount">${(tx.value / 1e18).toFixed(4)} ETH</div>
+                            </div>
+                            <div class="fee">Газ: ${tx.gas_used} | Цена газа: ${(tx.gas_price / 1e9).toFixed(1)} Gwei</div>
+                        `;
+                        content.appendChild(card);
+                    }
                 }
             } catch (e) {
                 content.innerHTML = '<div style="text-align:center; color:#ff4444;">Ошибка загрузки Ethereum</div>';
